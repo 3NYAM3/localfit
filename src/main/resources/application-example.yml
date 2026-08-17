@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: localfit
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/localfit
+    username: root
+    password: YOUR_DB_PASSWORD
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+public-data:
+  service-key: YOUR_PUBLIC_DATA_SERVICE_KEY
+
+  region-code:
+    target-keywords: 서울특별시,인천광역시,경기도
+    target-sido-codes: 11,28,41
+
+  rent-trade:
+    months-to-collect: 6
