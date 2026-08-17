@@ -40,7 +40,7 @@ public interface RegionRepository extends JpaRepository<Region, Long> {
     List<Region> findByRegionCodeStartingWith(String regionCodePrefix);
 
     //시군구코드+동 이름으로 region1 건 조회( 전월세 데이터를 region에 매칭할 때 사용)
-    Optional<Region> findByRegionCodeStartingWithAndDong(String regionCodePrefix, String dong);
+    //Optional<Region> findByRegionCodeStartingWithAndDong(String regionCodePrefix, String dong);
 
 
 }

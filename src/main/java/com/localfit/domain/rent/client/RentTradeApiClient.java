@@ -30,14 +30,14 @@ public class RentTradeApiClient {
         RestClient restClient = restClientBuilder.build();
         String finalUri = buildUri(lawdCd, dealYmd, pageNo, numOfRows);
 
-        log.info("[RentTradeApiClient] 요청 URI: {}", finalUri);
+        log.debug("[RentTradeApiClient] 요청 URI: {}", finalUri);
 
         String rawResponse = restClient.get()
                 .uri(URI.create(finalUri))
                 .retrieve()
                 .body(String.class);
 
-        log.info("[RentTradeApiClient] 응답 원문: {}", truncate(rawResponse));
+        log.debug("[RentTradeApiClient] 응답 원문: {}", truncate(rawResponse));
 
         // XML은 '<'로 시작 - HTML 오류 페이지도 '<'로 시작하지만 파싱 단계에서 걸러진다
         if (rawResponse == null || !rawResponse.trim().startsWith("<")) {
