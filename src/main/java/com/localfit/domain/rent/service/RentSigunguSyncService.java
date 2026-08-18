@@ -26,12 +26,10 @@ import java.util.stream.Collectors;
 
 /**
  * 시군구 단위 전월세 데이터 동기화를 담당하는 서비스.
- *
  * [클래스를 분리한 이유]
  * 같은 클래스 내부에서 메서드를 호출하면 Spring AOP 프록시를 거치지 않아
  * @Transactional이 적용되지 않는다(self-invocation 문제).
  * 시군구 단위로 트랜잭션을 나누려면 별도 빈으로 분리해야 한다.
- *
  * [성능 최적화]
  * - Region을 시군구당 1회만 조회해 Map으로 캐싱 (거래 1건마다 조회하던 것을 제거)
  * - 중복 판별 키를 사전에 일괄 조회해 Set으로 비교 (건별 exists 쿼리 제거)
@@ -75,8 +73,8 @@ public class RentSigunguSyncService {
         }
 
         // 2) 이 시군구의 기존 데이터 키를 한 번에 조회해 Set으로 캐싱
-        LocalDate rangeStart = YearMonth.parse(dealYmds.get(dealYmds.size() - 1), YM_FORMAT).atDay(1);
-        LocalDate rangeEnd = YearMonth.parse(dealYmds.get(0), YM_FORMAT).atEndOfMonth();
+        LocalDate rangeStart = YearMonth.parse(dealYmds.getLast(), YM_FORMAT).atDay(1);
+        LocalDate rangeEnd = YearMonth.parse(dealYmds.getFirst(), YM_FORMAT).atEndOfMonth();
         Set<String> existingKeys = new HashSet<>(
                 rentTransactionRepository.findDuplicateKeys(lawdCd, rangeStart, rangeEnd));
 

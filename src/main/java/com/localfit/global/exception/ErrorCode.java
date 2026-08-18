@@ -19,8 +19,10 @@ public enum ErrorCode {
 
     // 외부 공공데이터 API관련
     EXTERNAL_API_ERROR(HttpStatus.BAD_GATEWAY, "외부 공공데이터 API 호출 중 오류가 발생했습니다."),
-    EXTERNAL_API_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "외부 공공데이터 API 응답 형식이 올바르지 않습니다.");
+    EXTERNAL_API_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "외부 공공데이터 API 응답 형식이 올바르지 않습니다."),
 
+    // 지역
+    REGION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 지역입니다.");
 
     private final HttpStatus status;
     private final String message;

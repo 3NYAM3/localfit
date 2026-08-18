@@ -13,7 +13,6 @@ import java.util.stream.IntStream;
 
 /**
  * 전월세 실거래가 동기화 전체 흐름을 조율하는 서비스.
- *
  * 실제 수집/저장은 RentSigunguSyncService가 시군구 단위 트랜잭션으로 처리한다.
  * 이 클래스에는 @Transactional을 걸지 않는다 - 전체를 하나의 트랜잭션으로 묶으면
  * DB 커넥션을 수십 분간 점유하고, 마지막에 실패 시 전부 롤백되기 때문.
