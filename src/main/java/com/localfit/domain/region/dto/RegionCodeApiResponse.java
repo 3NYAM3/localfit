@@ -8,10 +8,6 @@ import java.util.List;
 
 /**
  * 행정안전부 법정동코드 API(StanReginCd)의 JSON 응답을 매핑하는 DTO.
- *
- * 응답 구조:
- * { "StanReginCd": [ {"head": [...]}, {"row": [...]} ] }
- * - 최상위 배열 안에 "메타정보(head)"와 "실제 데이터(row)"가 서로 다른 타입으로 섞여있다.
  */
 
 @Getter

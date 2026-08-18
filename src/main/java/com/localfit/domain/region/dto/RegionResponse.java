@@ -6,9 +6,6 @@ import lombok.Getter;
 
 /**
  * 지역 조회 API의 응답 형태.
- * Entity를 그대로 반환하지 않고 DTO로 변환해서 내려주는 이유:
- * - Entity의 내부 구조(연관관계, JPA 어노테이션 등)가 API 스펙에 그대로 노출되는 걸 방지
- * - 나중에 Entity가 바뀌어도 API 응답 스펙은 별도로 관리 가능
  */
 
 @Getter

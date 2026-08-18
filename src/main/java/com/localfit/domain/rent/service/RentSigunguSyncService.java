@@ -51,14 +51,8 @@ public class RentSigunguSyncService {
     private final RentTransactionRepository rentTransactionRepository;
     private final RegionRepository regionRepository;
 
-    /**
-     * 시군구 1개에 대해 전체 대상 기간을 동기화한다.
-     * 이 메서드 단위로 트랜잭션이 걸려, 중간에 실패해도 앞서 처리한 시군구는 보존된다.
-     *
-     * @param lawdCd   법정동코드 앞 5자리
-     * @param dealYmds 수집 대상 계약년월 목록 (최신순)
-     * @return 저장된 건수
-     */
+     // 시군구 1개에 대해 전체 대상 기간을 동기화한다.
+     // 이 메서드 단위로 트랜잭션이 걸려, 중간에 실패해도 앞서 처리한 시군구는 보존된다.
     @Transactional
     public int syncSigungu(String lawdCd, List<String> dealYmds) {
         // 1) 이 시군구의 Region을 한 번에 조회해 "동 이름 → Region" Map으로 캐싱
@@ -94,10 +88,8 @@ public class RentSigunguSyncService {
         return toSave.size();
     }
 
-    /**
-     * 특정 시군구/월의 데이터를 페이지네이션으로 끝까지 수집해 Entity 목록으로 변환한다.
-     * DB 저장은 하지 않고 목록만 반환한다(호출부에서 일괄 저장).
-     */
+    // 특정 시군구/월의 데이터를 페이지네이션으로 끝까지 수집해 Entity 목록으로 변환한다.
+    // DB 저장은 하지 않고 목록만 반환한다(호출부에서 일괄 저장).
     private List<RentTransaction> collectMonth(String lawdCd, String dealYmd,
                                                Map<String, Region> regionMap,
                                                Set<String> existingKeys) {
@@ -136,10 +128,9 @@ public class RentSigunguSyncService {
         return result;
     }
 
-    /**
-     * API 응답 1건을 Entity로 변환한다.
-     * Region 매칭 실패, 필수값 파싱 실패, 중복인 경우 null을 반환한다.
-     */
+
+    // API 응답 1건을 Entity로 변환한다.
+    // Region 매칭 실패, 필수값 파싱 실패, 중복인 경우 null을 반환한다.
     private RentTransaction toEntity(RentTradeApiResponse.Item item,
                                      Map<String, Region> regionMap,
                                      Set<String> existingKeys) {

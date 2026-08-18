@@ -20,10 +20,6 @@ import static java.lang.Thread.sleep;
 /**
  * 법정동코드 API에서 가져온 데이터를 Region 테이블에 동기화하는 서비스.
  * 동기화 대상 지역 범위는 RegionSyncProperties(설정)를 통해 주입받는다.
- *
- * [핵심 흐름]
- * syncTargetRegions() → syncByKeyword() 반복 호출 → fetchWithRetry()로 API 호출
- * → validateResponse()로 정상 응답 검증 → saveIfNotExists()로 DB 저장
  */
 
 @Slf4j
