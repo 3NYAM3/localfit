@@ -1,6 +1,5 @@
 package com.localfit.domain.recommendation.dto;
 
-import com.localfit.domain.rent.dto.RentType;
 import lombok.Getter;
 
 import java.util.List;

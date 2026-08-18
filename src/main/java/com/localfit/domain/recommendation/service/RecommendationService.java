@@ -6,10 +6,11 @@ import com.localfit.domain.region.entity.Region;
 import com.localfit.domain.region.repository.RegionRepository;
 import com.localfit.domain.rent.config.RentSyncProperties;
 import com.localfit.domain.rent.dto.RegionRentStatsProjection;
-import com.localfit.domain.rent.dto.RentType;
+import com.localfit.domain.recommendation.dto.RentType;
 import com.localfit.domain.rent.repository.RentTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,14 +32,24 @@ import java.util.stream.Collectors;
 public class RecommendationService {
 
     private static final long MIN_TRANSACTION_COUNT = 10;   // 적은 표본지역 평균 왜곡 방지를 위한 최소 건수
+    public static final String CACHE_NAME = "recommendation";
 
     private final RentTransactionRepository rentTransactionRepository;
     private final RegionRepository regionRepository;
     private final RentSyncProperties rentSyncProperties;
     private final ScoreNormalizer normalizer;
 
+
+    @Cacheable(
+            value = CACHE_NAME,
+            key = "#request.rentType + '::' + (#request.sido ?: 'ALL') + '::' + #request.limit"
+    )
     @Transactional(readOnly = true)
     public RecommendationResponse recommend(RecommendationRequest request) {
+
+        log.info("[Recommendation] 캐시 미스 - DB에서 재계산 (rentType={}, sido={}, limit={})",
+                request.getRentType(), request.getSido(), request.getLimit());
+
         YearMonth now = YearMonth.now();
         LocalDate start = now.minusMonths(rentSyncProperties.getMonthsToCollect() - 1L).atDay(1);
         LocalDate end = now.atEndOfMonth();

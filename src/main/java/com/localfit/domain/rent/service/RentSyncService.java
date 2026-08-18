@@ -1,9 +1,12 @@
 package com.localfit.domain.rent.service;
 
+import com.localfit.domain.recommendation.service.RecommendationService;
 import com.localfit.domain.region.repository.RegionRepository;
 import com.localfit.domain.rent.config.RentSyncProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 import java.time.YearMonth;
@@ -28,6 +31,7 @@ public class RentSyncService {
     private final RegionRepository regionRepository;
     private final RentSigunguSyncService rentSigunguSyncService;
     private final RentSyncProperties properties;
+    private final CacheManager cacheManager;
 
     //수집 대상 시군구 전체 x 최근 N개월에 대해 전월세 실거래가를 동기화한다. (진입점)
     public int syncRecentMonths() {
@@ -45,7 +49,19 @@ public class RentSyncService {
 
         long elapsedSec = (System.currentTimeMillis() - startTime) / 1000;
         log.info("[RentSync] 동기화 완료 - 총 {}건 저장 (소요 {}초)", totalSaved, elapsedSec);
+
+        evictRecommendationCache();
+
         return totalSaved;
+    }
+
+    // 새 데이터가 반영됐으므로 추천 결과 캐시를 전부 비운다
+    private void evictRecommendationCache() {
+        Cache cache = cacheManager.getCache(RecommendationService.CACHE_NAME);
+        if (cache != null) {
+            cache.clear();
+            log.info("[RentSync] 추천 캐시 무효화 완료");
+        }
     }
 
     // 현재 월부터 과거로 N개월치 "yyyyMM" 문자열 목록 생성 (최신순)

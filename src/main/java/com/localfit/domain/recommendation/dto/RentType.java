@@ -1,4 +1,4 @@
-package com.localfit.domain.rent.dto;
+package com.localfit.domain.recommendation.dto;
 
 public enum RentType {
     JEONSE,
