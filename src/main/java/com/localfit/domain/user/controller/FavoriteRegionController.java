@@ -1,5 +1,6 @@
 package com.localfit.domain.user.controller;
 
+import com.localfit.domain.user.dto.FavoriteRegionBatchRequest;
 import com.localfit.domain.user.dto.FavoriteRegionRequest;
 import com.localfit.domain.user.dto.FavoriteRegionResponse;
 import com.localfit.domain.user.service.FavoriteRegionService;
@@ -19,11 +20,11 @@ public class FavoriteRegionController {
 
     private final FavoriteRegionService favoriteRegionService;
 
-    @PostMapping
-    public ApiResponse<Long> add(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                 @Valid @RequestBody FavoriteRegionRequest request){
-        Long favoriteId = favoriteRegionService.add(userDetails.getUserId(), request.getRegionId());
-        return ApiResponse.ok("관심지역 등록 완료", favoriteId);
+    @PutMapping
+    public ApiResponse<Void> replaceAll(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                        @Valid @RequestBody FavoriteRegionBatchRequest request) {
+        favoriteRegionService.replaceAll(userDetails.getUserId(), request.getFavorites());
+        return ApiResponse.ok("관심지역 목록 저장 완료", null);
     }
 
     @GetMapping

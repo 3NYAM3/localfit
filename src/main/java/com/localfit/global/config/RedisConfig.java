@@ -14,27 +14,39 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @EnableCaching
 @Configuration
 public class RedisConfig {
 
+    private static final Duration DEFAULT_TTL = Duration.ofHours(24);
+
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        JacksonJsonRedisSerializer<RecommendationResponse> serializer =
-                new JacksonJsonRedisSerializer<>(RecommendationResponse.class);
+        RedisCacheConfiguration recommendationConfig = cacheConfig(RecommendationResponse.class);
+        RedisCacheConfiguration favoriteScoresConfig = cacheConfig(List.class);
 
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(24))   // 수집 배치 주기(일 단위)에 맞춤
+        return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(recommendationConfig)
+                .withInitialCacheConfigurations(Map.of(
+                        "recommendation", recommendationConfig,
+                        "favoriteScores", favoriteScoresConfig
+                ))
+                .build();
+    }
+
+    private <T> RedisCacheConfiguration cacheConfig(Class<T> type) {
+        JacksonJsonRedisSerializer<T> serializer = new JacksonJsonRedisSerializer<>(type);
+
+        return RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(DEFAULT_TTL)
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(serializer))
                 .disableCachingNullValues();
-
-        return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(config)
-                .build();
     }
 
 }

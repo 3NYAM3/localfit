@@ -81,4 +81,54 @@ public interface RentTransactionRepository extends JpaRepository<RentTransaction
             @Param("end") LocalDate end,
             @Param("minCount") long minCount
     );
+
+    /**
+     * 특정 시도(sido) 범위로 제한한 지역 통계.
+     * 계층적 순위 계산(시도 내 순위) 시 사용한다.
+     */
+    @Query("""
+            SELECT
+                rt.region.id AS regionId,
+                COUNT(rt) AS totalCount,
+                AVG(CASE WHEN rt.monthlyRent = 0 THEN rt.deposit END) AS jeonseAvgDeposit,
+                AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.deposit END) AS monthlyAvgDeposit,
+                AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.monthlyRent END) AS monthlyAvgRent
+            FROM RentTransaction rt
+            WHERE rt.dealDate BETWEEN :start AND :end
+              AND rt.region.sido = :sido
+            GROUP BY rt.region.id
+            HAVING COUNT(rt) >= :minCount
+            """)
+    List<RegionRentStatsProjection> findRegionStatsBySido(
+            @Param("sido") String sido,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("minCount") long minCount
+    );
+
+    /**
+     * 특정 시군구(sigungu) 범위로 제한한 지역 통계.
+     * 계층적 순위 계산(시군구 내 순위) 시 사용한다.
+     */
+    @Query("""
+            SELECT
+                rt.region.id AS regionId,
+                COUNT(rt) AS totalCount,
+                AVG(CASE WHEN rt.monthlyRent = 0 THEN rt.deposit END) AS jeonseAvgDeposit,
+                AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.deposit END) AS monthlyAvgDeposit,
+                AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.monthlyRent END) AS monthlyAvgRent
+            FROM RentTransaction rt
+            WHERE rt.dealDate BETWEEN :start AND :end
+              AND rt.region.sido = :sido
+              AND rt.region.sigungu = :sigungu
+            GROUP BY rt.region.id
+            HAVING COUNT(rt) >= :minCount
+            """)
+    List<RegionRentStatsProjection> findRegionStatsBySigungu(
+            @Param("sido") String sido,
+            @Param("sigungu") String sigungu,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("minCount") long minCount
+    );
 }

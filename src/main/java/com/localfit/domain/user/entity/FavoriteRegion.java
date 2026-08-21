@@ -4,13 +4,14 @@ import com.localfit.domain.region.entity.Region;
 import com.localfit.global.common.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
         name = "favorite_region",
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "region_id"})
@@ -29,9 +30,17 @@ public class FavoriteRegion extends BaseEntity {
     @JoinColumn(name = "region_id", nullable = false)
     private Region region;
 
+    @Column(nullable = false)
+    private Integer priority;
+
     @Builder
-    public FavoriteRegion(User user, Region region){
+    public FavoriteRegion(User user, Region region, Integer priority){
         this.user = user;
         this.region = region;
+        this.priority = priority;
+    }
+
+    public void decreasePriority() {
+        this.priority = this.priority - 1;
     }
 }

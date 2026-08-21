@@ -10,14 +10,16 @@ public class FavoriteRegionResponse {
 
     private final Long favoriteId;
     private final Long regionId;
+    private final Integer priority;
     private final String sido;
     private final String sigungu;
     private final String dong;
     private final LocalDateTime addedAt;
 
-    public FavoriteRegionResponse(FavoriteRegion favoriteRegion){
+    public FavoriteRegionResponse(FavoriteRegion favoriteRegion) {
         this.favoriteId = favoriteRegion.getId();
         this.regionId = favoriteRegion.getRegion().getId();
+        this.priority = favoriteRegion.getPriority();
         this.sido = favoriteRegion.getRegion().getSido();
         this.sigungu = favoriteRegion.getRegion().getSigungu();
         this.dong = favoriteRegion.getRegion().getDong();
