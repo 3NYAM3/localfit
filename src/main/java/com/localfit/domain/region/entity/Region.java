@@ -37,24 +37,17 @@ public class Region extends BaseEntity {
     @Column(length = 20)
     private String dong;
 
-    private Double latitude;
-    private Double longitude;
-
-
     /**
      * 생성자는 @Builder로만 열어둔다.
      * Setter를 두지 않는 이유: Entity를 아무 곳에서나 임의로 수정 가능하게 열어두면
      * 나중에 데이터 일관성 문제를 추적하기 어려워지기 때문.
      */
     @Builder
-    public Region(String regionCode, String sido, String sigungu, String dong,
-                  Double latitude, Double longitude) {
+    public Region(String regionCode, String sido, String sigungu, String dong) {
         this.regionCode = regionCode;
         this.sido = sido;
         this.sigungu = sigungu;
         this.dong = dong;
-        this.latitude = latitude;
-        this.longitude = longitude;
     }
 
 }
