@@ -2,6 +2,12 @@ package com.localfit.domain.recommendation.dto;
 
 import lombok.Getter;
 
+import java.util.Map;
+
+/**
+ * 관심지역 1건에 대한 계층별 평가 결과
+ * 지표별로 정밀도가 달라 각 지표를 별도 내부 클래스로 분리
+ */
 @Getter
 public class FavoriteRegionScoreResponse {
 
@@ -11,50 +17,53 @@ public class FavoriteRegionScoreResponse {
     private final String sigungu;
     private final String dong;
 
-    private final HousingScore housing;
-    private final SubwayScore subway;
-
+    private final WeightInfo weights;
+    private final TierScore sigunguTier;
+    private final TierScore sidoTier;
+    private final TierScore capitalTier;
 
     public FavoriteRegionScoreResponse(Long regionId, Integer priority, String sido, String sigungu, String dong,
-                                       HousingScore housing, SubwayScore subway) {
+                                       WeightInfo weights, TierScore sigunguTier,
+                                       TierScore sidoTier, TierScore capitalTier) {
         this.regionId = regionId;
         this.priority = priority;
         this.sido = sido;
         this.sigungu = sigungu;
         this.dong = dong;
-        this.housing = housing;
-        this.subway = subway;
+        this.weights = weights;
+        this.sigunguTier = sigunguTier;
+        this.sidoTier = sidoTier;
+        this.capitalTier = capitalTier;
     }
 
-    // 주거비 지표 - 계층별 순위 + 원본 금액
-    @Getter
-    public static class HousingScore {
-        private final Long avgAmount;
-        private final long transactionCount;
-        private final RankingInfo sigunguRanking;   // 시군구 내 순위 (펼쳐보기용)
-        private final RankingInfo sidoRanking;      // 시도 내 순위 (기본 표시)
-        private final RankingInfo capitalRanking;   // 수도권 전체 순위 (펼쳐보기용)
 
-        public HousingScore(Long avgAmount, long transactionCount, RankingInfo sigunguRanking, RankingInfo sidoRanking, RankingInfo capitalRanking) {
-            this.avgAmount = avgAmount;
-            this.transactionCount = transactionCount;
-            this.sigunguRanking = sigunguRanking;
-            this.sidoRanking = sidoRanking;
-            this.capitalRanking = capitalRanking;
+    /** 이번 계산에 실제로 적용된 지표별 가중치 (사용자에게 계산 근거를 투명하게 보여주기 위함) */
+    @Getter
+    public static class WeightInfo {
+        private final double housing;
+        private final double subway;
+
+        public WeightInfo(Map<IndicatorType, Double> weights) {
+            this.housing = toPercent(weights.get(IndicatorType.HOUSING));
+            this.subway = toPercent(weights.get(IndicatorType.SUBWAY));
+        }
+
+        private double toPercent(Double ratio) {
+            return ratio == null ? 0 : Math.round(ratio * 1000) / 10.0;
         }
     }
 
-    //지하철 접근성 지표 - 계층별 순위 + 역 개수
+    /** 특정 비교 계층(시군구/시도/수도권) 하나에서의 종합 점수와 지표별 세부 순위 */
     @Getter
-    public static class SubwayScore {
-        private final long stationCount;
-        private final RankingInfo sidoRanking;
-        private final RankingInfo capitalRanking;
+    public static class TierScore {
+        private final double totalScore;         // 가중합산된 종합 점수 (0~100, 높을수록 좋음)
+        private final RankingInfo housingRanking;
+        private final RankingInfo subwayRanking;
 
-        public SubwayScore(long stationCount, RankingInfo sidoRanking, RankingInfo capitalRanking) {
-            this.stationCount = stationCount;
-            this.sidoRanking = sidoRanking;
-            this.capitalRanking = capitalRanking;
+        public TierScore(double totalScore, RankingInfo housingRanking, RankingInfo subwayRanking) {
+            this.totalScore = Math.round(totalScore * 10) / 10.0;
+            this.housingRanking = housingRanking;
+            this.subwayRanking = subwayRanking;
         }
     }
 }

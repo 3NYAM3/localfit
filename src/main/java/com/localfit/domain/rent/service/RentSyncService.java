@@ -1,7 +1,6 @@
 package com.localfit.domain.rent.service;
 
 import com.localfit.domain.recommendation.service.FavoriteRegionScoreService;
-import com.localfit.domain.recommendation.service.RecommendationService;
 import com.localfit.domain.region.repository.RegionRepository;
 import com.localfit.domain.rent.config.RentSyncProperties;
 import lombok.RequiredArgsConstructor;
@@ -51,26 +50,10 @@ public class RentSyncService {
         long elapsedSec = (System.currentTimeMillis() - startTime) / 1000;
         log.info("[RentSync] 동기화 완료 - 총 {}건 저장 (소요 {}초)", totalSaved, elapsedSec);
 
-        evictRecommendationCache();
-
         return totalSaved;
     }
 
-    // 새 데이터가 반영됐으므로 추천 결과 캐시를 전부 비운다
-    private void evictRecommendationCache() {
-        Cache recommendationCache = cacheManager.getCache(RecommendationService.CACHE_NAME);
-        if (recommendationCache != null) {
-            recommendationCache.clear();
-        }
 
-        // 관심지역 점수도 통계 갱신에 영향을 받으므로 함께 무효화
-        Cache favoriteScoresCache = cacheManager.getCache(FavoriteRegionScoreService.CACHE_NAME);
-        if (favoriteScoresCache != null) {
-            favoriteScoresCache.clear();
-        }
-
-        log.info("[RentSync] 추천/관심지역 점수 캐시 무효화 완료");
-    }
 
     // 현재 월부터 과거로 N개월치 "yyyyMM" 문자열 목록 생성 (최신순)
     private List<String> recentYearMonths(int months) {

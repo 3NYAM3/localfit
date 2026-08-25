@@ -59,8 +59,6 @@ public class FavoriteRegionService {
                 .toList();
 
         favoriteRegionRepository.saveAll(newFavorites);
-
-        evictFavoriteScoresCache(userId);
     }
 
     @Transactional(readOnly = true)
@@ -87,15 +85,6 @@ public class FavoriteRegionService {
                 .forEach(FavoriteRegion::decreasePriority);
 
         favoriteRegionRepository.delete(target);
-
-        evictFavoriteScoresCache(userId);
     }
 
-    private void evictFavoriteScoresCache(Long userId) {
-        Cache cache = cacheManager.getCache(FavoriteRegionScoreService.CACHE_NAME);
-        if (cache != null) {
-            cache.evictIfPresent(userId + "::JEONSE");
-            cache.evictIfPresent(userId + "::MONTHLY");
-        }
-    }
 }
