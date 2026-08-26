@@ -117,7 +117,14 @@ public class RegionSyncService {
     }
 
     private boolean saveIfNotExists(RegionCodeApiResponse.RegionCodeItem item) {
-        if (regionRepository.existsByRegionCode(item.getRegionCd())) {
+        String regionCode = item.getRegionCd();
+
+        //법정동 표기상 동 범위에 시나 구 가들어가는것을 방지
+        if (regionCode.endsWith("00000")) {
+            return false;
+        }
+
+        if (regionRepository.existsByRegionCode(regionCode)) {
             return false;
         }
 

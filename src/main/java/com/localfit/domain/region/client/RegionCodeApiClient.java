@@ -13,6 +13,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
@@ -53,10 +54,13 @@ public class RegionCodeApiClient {
         }
     }
 
-    //URI 조립
+    /** URI 조립 */
     private String buildUri(String keyword, int pageNo, int numOfRows) {
-        String baseUri = UriComponentsBuilder
+        String decodedKey = URLDecoder.decode(publicDataProperties.getServiceKey(), StandardCharsets.UTF_8);
+
+        return UriComponentsBuilder
                 .fromUriString(BASE_URL)
+                .queryParam("serviceKey", decodedKey)
                 .queryParam("type", "json")
                 .queryParam("pageNo", pageNo)
                 .queryParam("numOfRows", numOfRows)
@@ -65,11 +69,9 @@ public class RegionCodeApiClient {
                 .encode(StandardCharsets.UTF_8)         // encode() → build() 순서 (이중 인코딩 방지)
                 .build()
                 .toUriString();
-
-        return baseUri + "&ServiceKey=" + publicDataProperties.getServiceKey();
     }
 
-    //로그가 너무 길어지지 않도록 응답 원문을 300자로 잘라서 반환
+    /**로그가 너무 길어지지 않도록 응답 원문을 300자로 잘라서 반환*/
     private String truncate(String text) {
         if (text == null) return "null";
         return text.length() > 300 ? text.substring(0, 300) + "..." : text;
