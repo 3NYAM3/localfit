@@ -5,6 +5,9 @@ import lombok.Getter;
 import java.time.LocalDate;
 import java.time.Month;
 
+/**
+ * 특정지역의 전월세 상세 통계 응답 DTO
+ */
 @Getter
 public class RentStatsResponse {
 
@@ -12,8 +15,8 @@ public class RentStatsResponse {
     private final String sido;
     private final String sigungu;
     private final String dong;
-    private final LocalDate periodStart;
-    private final LocalDate periodEnd;
+    private final LocalDate periodStart;    //집계 시작일
+    private final LocalDate periodEnd;      //집계 종료일
 
     private final JeonseStats jeonse;
     private final MonthlyStats monthly;
@@ -31,7 +34,7 @@ public class RentStatsResponse {
         this.monthly = monthly;
     }
 
-    // 전세 통계
+    /** 전세 통계 */
     @Getter
     public static class JeonseStats {
         private final long count;
@@ -43,7 +46,7 @@ public class RentStatsResponse {
         }
     }
 
-    // 월세 통계
+    /** 월세 통계 */
     @Getter
     public static class MonthlyStats {
         private final long count;
@@ -56,6 +59,4 @@ public class RentStatsResponse {
             this.avgMonthlyRent = avgMonthlyRent == null ? null : Math.round(avgMonthlyRent);
         }
     }
-
-
 }

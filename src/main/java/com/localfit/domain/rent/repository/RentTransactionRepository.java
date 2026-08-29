@@ -15,11 +15,12 @@ public interface RentTransactionRepository extends JpaRepository<RentTransaction
 
 
     /**
-     * 특정 시군구/기간에 이미 저장된 거래들의 중복 판별 키를 한 번에 조회한다.
+     * 시군구/기간에 이미 저장된 거래들의 중복 판별 키를 한 번에 조회
      *
-     * 동기화 시 거래 1건마다 exists 쿼리를 날리면 수만 번의 DB 왕복이 발생한다.
-     * 시군구당 1회만 조회해 Set으로 만들어두고 메모리에서 비교하도록 변경했다.
-     * (성능 개선: 약 4만 회 → 80회 쿼리로 단축)
+     * @param sigunguCode   시군구 법정동 코드 앞 5자리
+     * @param start         집계 시작일
+     * @param end           집계 종료일
+     * @return  중복 판별용 복합키 목록
      */
     @Query("""
             SELECT CONCAT(rt.region.id, '|', rt.aptName, '|', rt.excluUseArea, '|', rt.dealDate, '|', rt.deposit)
@@ -35,11 +36,12 @@ public interface RentTransactionRepository extends JpaRepository<RentTransaction
 
 
     /**
-     * 특정 지역/기간의 전월세 통계를 집계한다.
+     * 특정 지역/기간의 전월세 통계를 집계
      *
-     * 전세(월세=0)와 월세(월세>0)를 CASE 문으로 나눠 단일 쿼리로 계산한다.
-     * 두 유형을 따로 조회하면 쿼리 2번이 필요하지만, 이 방식으로 1번에 처리한다.
-     * CASE 조건에 맞지 않는 행은 AVG 계산 시 null로 처리되어 자동으로 제외된다.
+     * @param regionId  조회 대상 지역ID
+     * @param start     집계 시작일
+     * @param end       집계 종료일
+     * @return  전/월세 거래 건수, 평균 보증금, 평균 월세액
      */
     @Query("""
             SELECT
@@ -58,18 +60,18 @@ public interface RentTransactionRepository extends JpaRepository<RentTransaction
             @Param("end") LocalDate end
     );
 
-
     /**
-     * 모든 지역의 전월세 통계를 한 번의 쿼리로 집계한다.
-     * 추천 점수 계산 시 지역마다 개별 조회하면 수천 번의 쿼리가 발생하므로,
-     * GROUP BY로 한 번에 가져와 메모리에서 정규화한다.
+     * 수도권 전체 지역의 전월세 통계를 집계
+     *
+     * @param start     집계 시작일
+     * @param end       집계 종료일
+     * @param minCount  최소 거래건수 (표본왜곡 방지)
+     * @return  지역별 전월세 통계 목록
      */
     @Query("""
             SELECT
                 rt.region.id AS regionId,
-                COUNT(rt) AS totalCount,
                 AVG(CASE WHEN rt.monthlyRent = 0 THEN rt.deposit END) AS jeonseAvgDeposit,
-                AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.deposit END) AS monthlyAvgDeposit,
                 AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.monthlyRent END) AS monthlyAvgRent
             FROM RentTransaction rt
             WHERE rt.dealDate BETWEEN :start AND :end
@@ -83,15 +85,18 @@ public interface RentTransactionRepository extends JpaRepository<RentTransaction
     );
 
     /**
-     * 특정 시도(sido) 범위로 제한한 지역 통계.
-     * 계층적 순위 계산(시도 내 순위) 시 사용한다.
+     * 특정 시도 범위로 제한한 지역별 전월세 통계를 집계
+     *
+     * @param sido      대상 시도명
+     * @param start     집계 시작일
+     * @param end       집계 종료일
+     * @param minCount  최소 거래 건수 (표본 왜곡 방지)
+     * @return  해당 시도 내 지역별 전월세 통계 목록
      */
     @Query("""
             SELECT
                 rt.region.id AS regionId,
-                COUNT(rt) AS totalCount,
                 AVG(CASE WHEN rt.monthlyRent = 0 THEN rt.deposit END) AS jeonseAvgDeposit,
-                AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.deposit END) AS monthlyAvgDeposit,
                 AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.monthlyRent END) AS monthlyAvgRent
             FROM RentTransaction rt
             WHERE rt.dealDate BETWEEN :start AND :end
@@ -107,15 +112,18 @@ public interface RentTransactionRepository extends JpaRepository<RentTransaction
     );
 
     /**
-     * 특정 시군구(sigungu) 범위로 제한한 지역 통계.
-     * 계층적 순위 계산(시군구 내 순위) 시 사용한다.
+     * 특정 시군구 범위로 제한한 지역별 전월세 통계를 집계
+     * @param sido      대상 시도명
+     * @param sigungu   대상 시군구명
+     * @param start     집계 시작일
+     * @param end       집계 종료일
+     * @param minCount  최소 거래 건수(표본 왜곡 방지)
+     * @return  해당 시군구 내 지역별 전월세 통계 목록
      */
     @Query("""
             SELECT
                 rt.region.id AS regionId,
-                COUNT(rt) AS totalCount,
                 AVG(CASE WHEN rt.monthlyRent = 0 THEN rt.deposit END) AS jeonseAvgDeposit,
-                AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.deposit END) AS monthlyAvgDeposit,
                 AVG(CASE WHEN rt.monthlyRent > 0 THEN rt.monthlyRent END) AS monthlyAvgRent
             FROM RentTransaction rt
             WHERE rt.dealDate BETWEEN :start AND :end

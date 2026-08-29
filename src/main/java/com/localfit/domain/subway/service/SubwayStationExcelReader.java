@@ -12,6 +12,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 리소스에 포함된 지하철역 표준데이터 엑셀파일을 읽어 DTO목록으로 변환하는 컴포넌트
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -25,6 +28,11 @@ public class SubwayStationExcelReader {
 
     private final SubwayProperties subwayProperties;
 
+    /**
+     * 설정된 경로의 엑셀 파일을 읽어 지하철역 목록으로 반환
+     *
+     * @return 파싱된 지하철역 목록
+     */
     public List<SubwayStationExcelRow> readAll() {
         List<SubwayStationExcelRow> result = new ArrayList<>();
 
@@ -40,12 +48,13 @@ public class SubwayStationExcelReader {
                 String stationCode = formatter.formatCellValue(row.getCell(COL_STATION_CODE)).trim();
                 if (stationCode.isEmpty()) continue;
 
-                String stationName = formatter.formatCellValue(row.getCell(COL_STATION_NAME)).trim();
-                String roadAddress = formatter.formatCellValue(row.getCell(COL_ROAD_ADDRESS)).trim();
-                Double latitude = parseDouble(row.getCell(COL_LATITUDE));
-                Double longitude = parseDouble(row.getCell(COL_LONGITUDE));
-
-                result.add(new SubwayStationExcelRow(stationCode, stationName, latitude, longitude, roadAddress));
+                result.add(new SubwayStationExcelRow(
+                        stationCode,
+                        formatter.formatCellValue(row.getCell(COL_STATION_NAME)).trim(),
+                        parseDouble(row.getCell(COL_LATITUDE)),
+                        parseDouble(row.getCell(COL_LONGITUDE)),
+                        formatter.formatCellValue(row.getCell(COL_ROAD_ADDRESS)).trim()
+                ));
             }
 
         } catch (Exception e) {
@@ -57,11 +66,12 @@ public class SubwayStationExcelReader {
         return result;
     }
 
+    /** 셀 값을 Double로 변환한다. 셀이 없거나 변환 불가 시 null을 반환한다 */
     private Double parseDouble(Cell cell) {
         if (cell == null) return null;
         try {
             return cell.getNumericCellValue();
-        } catch (Exception e){
+        } catch (Exception e) {
             return null;
         }
     }

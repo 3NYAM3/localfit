@@ -11,6 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * 리소스에 포함된 지하철역 표준데이터 엑셀 파일을 읽어 SubwayStation테이블에 동기화하는 서비스
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,6 +23,11 @@ public class SubwayStationSyncService {
     private final RegionAddressMatcher regionAddressMatcher;
     private final SubwayStationRepository subwayStationRepository;
 
+    /**
+     * 엑셀파일에서 지하철역 목록을 읽어 Region과 매칭해 저장
+     *
+     * @return 저장된 지하철역 건수
+     */
     @Transactional
     public int sync() {
         List<SubwayStationExcelRow> rows = excelReader.readAll();
@@ -28,25 +36,23 @@ public class SubwayStationSyncService {
         int skipped = 0;
 
         for (SubwayStationExcelRow row : rows) {
-            if(subwayStationRepository.existsByStationCode(row.getStationCode())){
+            if (subwayStationRepository.existsByStationCode(row.getStationCode())) {
                 continue;
             }
 
             Region region = regionAddressMatcher.match(row.getRoadAddress());
-            if (region ==null){
+            if (region == null) {
                 skipped++;
                 continue;
             }
 
-            SubwayStation station = SubwayStation.builder()
-                    .stationCode(row.getStationCode())
+            subwayStationRepository.save(SubwayStation.builder()
                     .stationName(row.getStationName())
                     .region(region)
                     .latitude(row.getLatitude())
                     .longitude(row.getLongitude())
-                    .build();
+                    .build());
 
-            subwayStationRepository.save(station);
             saved++;
         }
         log.info("[SubwayStationSync] 완료 - 저장 {}건, 매칭 실패로 제외 {}건", saved, skipped);

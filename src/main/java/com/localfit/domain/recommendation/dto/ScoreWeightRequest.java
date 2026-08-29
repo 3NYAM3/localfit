@@ -26,6 +26,7 @@ public class ScoreWeightRequest {
         return map;
     }
 
+    /** 특정 지표의 중요도를 반환. 값이 없으면 NORMAL 반환 */
     public ImportanceLevel get(IndicatorType type) {
         return importance.getOrDefault(type, ImportanceLevel.NORMAL);
     }

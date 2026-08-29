@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 관심지역 관리 서비스
+ */
 @Service
 @RequiredArgsConstructor
 public class FavoriteRegionService {
@@ -32,7 +35,9 @@ public class FavoriteRegionService {
 
     /**
      * 관심지역 목록을 한 번에 교체 등록한다.
-     * 기존 관심지역을 모두 지우고 요청받은 목록으로 새로 저장한다.
+     *
+     * @param userId   사용자 ID
+     * @param requests 등록할 관신지역 목록
      */
     @Transactional
     public void replaceAll(Long userId, List<FavoriteRegionRequest> requests) {
@@ -50,17 +55,21 @@ public class FavoriteRegionService {
 
         favoriteRegionRepository.deleteAllByUserId(userId);
 
-        List<FavoriteRegion> newFavorites = requests.stream()
+        favoriteRegionRepository.saveAll(requests.stream()
                 .map(req -> FavoriteRegion.builder()
                         .user(user)
                         .region(regionMap.get(req.getRegionId()))
                         .priority(req.getPriority())
                         .build())
-                .toList();
-
-        favoriteRegionRepository.saveAll(newFavorites);
+                .toList());
     }
 
+    /**
+     * 사용자의 관심지역 목록을 우선순위 순으로 반환
+     *
+     * @param userId 조회 대상 사용자 ID
+     * @return 관심지역 목록
+     */
     @Transactional(readOnly = true)
     public List<FavoriteRegionResponse> getMyFavorites(Long userId) {
         return favoriteRegionRepository.findAllByUserId(userId).stream()
@@ -68,6 +77,12 @@ public class FavoriteRegionService {
                 .toList();
     }
 
+    /**
+     * 특정 관심지역을 삭제하고 나머지 항목의 우선순위를 재배열
+     *
+     * @param userId   사용자 ID
+     * @param regionId 삭제할 지역 ID
+     */
     @Transactional
     public void remove(Long userId, Long regionId) {
         List<FavoriteRegion> all = favoriteRegionRepository.findAllByUserId(userId);
@@ -86,5 +101,4 @@ public class FavoriteRegionService {
 
         favoriteRegionRepository.delete(target);
     }
-
 }

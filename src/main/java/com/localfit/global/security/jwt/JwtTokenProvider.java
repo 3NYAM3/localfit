@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
+/**
+ * JWT 발급/검증/파싱 컴포넌트
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -40,13 +43,12 @@ public class JwtTokenProvider {
 
     public String createToken(Long userId, String email, long validityMs) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + validityMs);
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("email", email)
                 .issuedAt(now)
-                .expiration(expiry)
+                .expiration(new Date(now.getTime() + validityMs))
                 .signWith(secretKey)
                 .compact();
     }
@@ -73,7 +75,7 @@ public class JwtTokenProvider {
         }
     }
 
-    private Claims parseClaims(String token){
+    private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()

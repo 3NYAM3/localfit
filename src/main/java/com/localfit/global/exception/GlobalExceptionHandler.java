@@ -9,18 +9,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
- * 애플리케이션 전역에서 발생하는 예외를 한 곳에서 처리하는 핸들러.
- * 각 Controller/Service에서 개별적으로 try-catch 하지 않아도,
- * 여기서 예외 타입별로 공통된 응답 형식(ApiResponse)으로 변환해준다.
- *
- * @RestControllerAdvice - 모든 @RestController에서 발생한 예외를 가로챈다.
+ * 전역 예외 처리 핸들러
  */
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // CustomException 처리
+    /** 비즈니스 예외 처리 - ErrorCode에 정의된 상태코드와 메시지로 응답 */
+    @SuppressWarnings("unused")
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
         log.error("[CustomException] code: {}, message: {}", e.getErrorCode(), e.getMessage());
@@ -29,16 +26,8 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(e.getErrorCode().getStatus().value(), e.getMessage()));
     }
 
-    // 예상치 못한 모든 예외(NPE, 라이브러리 예외 등)의 최종 처리, 500으로 응답
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
-        log.error("[Exception] message: {}", e.getMessage(), e);
-        return ResponseEntity
-                .internalServerError()
-                .body(ApiResponse.error(500, "서버 내부 오류가 발생했습니다."));
-    }
-
-    // @Valid검증 실패 시 처리
+    /** @Valid 검증 실패 처리 - 첫 번째 필드 오류 메시지를 400으로 응답 */
+    @SuppressWarnings("unused")
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult().getFieldErrors().stream()
@@ -48,5 +37,15 @@ public class GlobalExceptionHandler {
 
         log.warn("[Validation] {}", message);
         return ResponseEntity.badRequest().body(ApiResponse.error(400, message));
+    }
+
+    /** 예상치 못한 예외 최종 처리 - NPE, 라이브러리 예외 등을 500으로 응답 */
+    @SuppressWarnings("unused")
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
+        log.error("[Exception] message: {}", e.getMessage(), e);
+        return ResponseEntity
+                .internalServerError()
+                .body(ApiResponse.error(500, "서버 내부 오류가 발생했습니다."));
     }
 }

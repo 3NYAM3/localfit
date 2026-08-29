@@ -1,7 +1,6 @@
 package com.localfit.domain.region.client;
 
-import com.localfit.domain.region.config.RegionSyncProperties;
-import com.localfit.domain.region.dto.RegionCodeApiResponse;
+import com.localfit.domain.region.dto.RegionApiResponse;
 import com.localfit.global.config.PublicDataProperties;
 import com.localfit.global.exception.CustomException;
 import com.localfit.global.exception.ErrorCode;
@@ -16,6 +15,10 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * 행정안전부 행정표준코드 법정동코드 호출 클라이언트
+ * 응답형식 JSON
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -27,26 +30,32 @@ public class RegionCodeApiClient {
     private final PublicDataProperties publicDataProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public RegionCodeApiResponse fetchByAddressKeyword(String keyword, int pageNo, int numOfRows) {
+    /**
+     * 법정동코드 목록을 조회
+     * @param keyword   검색키워드 (서울특별시, 인천광역시, 경기도)
+     * @param pageNo    페이지 번호
+     * @param numOfRows 한 페이지 결과 수
+     * @return  파싱된 법정동코드 응답
+     */
+    public RegionApiResponse fetch(String keyword, int pageNo, int numOfRows) {
         RestClient restClient = restClientBuilder.build();
         String finalUri = buildUri(keyword, pageNo, numOfRows);
 
-        // String으로 원문을 받는다 (Content-Type이 HTML이어도 예외 없이 받아짐)
+        // String으로 원문을 받는다
         String rawResponse = restClient.get()
                 .uri(URI.create(finalUri))
                 .retrieve()
                 .body(String.class);
 
-        // JSON 형식인지 간단히 검증 (HTML 오류 페이지 방어)
+        // JSON 형식인지 간단히 검증
         if (rawResponse == null || !rawResponse.trim().startsWith("{")) {
-            log.error("[RegionCodeApiClient] JSON이 아닌 응답 수신 - keyword: {}, 응답: {}",
-                    keyword, truncate(rawResponse));
+            log.error("[RegionCodeApiClient] JSON이 아닌 응답 수신 - keyword: {}, 응답: {}", keyword, truncate(rawResponse));
             throw new CustomException(ErrorCode.EXTERNAL_API_INVALID_RESPONSE);
         }
 
-        // 수동으로 DTO 파싱
+        // DTO 파싱
         try {
-            return objectMapper.readValue(rawResponse, RegionCodeApiResponse.class);
+            return objectMapper.readValue(rawResponse, RegionApiResponse.class);
         } catch (Exception e) {
             log.error("[RegionCodeApiClient] JSON 파싱 실패 - keyword: {}, 응답: {}",
                     keyword, truncate(rawResponse), e);
@@ -54,7 +63,10 @@ public class RegionCodeApiClient {
         }
     }
 
-    /** URI 조립 */
+    /**
+     * URI조립
+     * 서비스키를 미리 디코딩한 뒤 다른 파라미터와 함께 넣고 전체를 한 번에 인코딩해 이중 인코딩 문제를 방지한다.
+     */
     private String buildUri(String keyword, int pageNo, int numOfRows) {
         String decodedKey = URLDecoder.decode(publicDataProperties.getServiceKey(), StandardCharsets.UTF_8);
 

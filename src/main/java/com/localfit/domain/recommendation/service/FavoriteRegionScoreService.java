@@ -56,6 +56,7 @@ public class FavoriteRegionScoreService {
         LocalDate start = now.minusMonths(rentSyncProperties.getMonthsToCollect() - 1L).atDay(1);
         LocalDate end = now.atEndOfMonth();
 
+        // 수도권 전체 통계는 모든 관심지역에 동일하므로 1회만 조회해 재사용
         List<RegionRentStatsProjection> capitalRentStats = rentTransactionRepository.findAllRegionStats(start, end, MIN_TRANSACTION_COUNT);
         List<SubwayCountProjection> capitalSubwayStats = subwayStationRepository.countAllBySigungu();
 
@@ -101,15 +102,12 @@ public class FavoriteRegionScoreService {
         capitalRankings.put(IndicatorType.HOUSING, housingCapital);
         capitalRankings.put(IndicatorType.SUBWAY, subwayCapital);
 
-        FavoriteRegionScoreResponse.TierScore sigunguTier = buildTierScore(sigunguRankings, weights);
-        FavoriteRegionScoreResponse.TierScore sidoTier = buildTierScore(sidoRankings, weights);
-        FavoriteRegionScoreResponse.TierScore capitalTier = buildTierScore(capitalRankings, weights);
-
-        FavoriteRegionScoreResponse.WeightInfo weightInfo = new FavoriteRegionScoreResponse.WeightInfo(weights);
-
         return new FavoriteRegionScoreResponse(
                 region.getId(), favorite.getPriority(), region.getSido(), region.getSigungu(), region.getDong(),
-                weightInfo, sigunguTier, sidoTier, capitalTier
+                new FavoriteRegionScoreResponse.WeightInfo(weights),
+                buildTierScore(sigunguRankings, weights),
+                buildTierScore(sidoRankings, weights),
+                buildTierScore(capitalRankings, weights)
         );
     }
 

@@ -9,6 +9,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Spring Security 인증 객체
+ */
 @Getter
 public class CustomUserDetails implements UserDetails {
 
@@ -17,7 +20,7 @@ public class CustomUserDetails implements UserDetails {
     private final String password;
     private final String role;
 
-    public CustomUserDetails(User user){
+    public CustomUserDetails(User user) {
         this.userId = user.getId();
         this.email = user.getEmail();
         this.password = user.getPassword();
@@ -25,12 +28,12 @@ public class CustomUserDetails implements UserDetails {
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities(){
-        return List.of(new SimpleGrantedAuthority("ROLE_"+role));
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     @Override
-    public String getUsername(){
+    public String getUsername() {
         return email;
     }
 

@@ -14,7 +14,7 @@ public class RankingInfo {
     private final int rank;
     private final double percentile;
 
-    private final boolean inherited;
+    private final boolean inherited; //true: 원본 데이터가 없어 상위 계층 값을 그대로 물려받은것임
 
     public RankingInfo(String scopeName, int totalCount, int rank, double percentile){
         this(scopeName, totalCount, rank, percentile, false);

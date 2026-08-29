@@ -4,10 +4,11 @@ package com.localfit.domain.rent.service;
 import com.localfit.domain.region.entity.Region;
 import com.localfit.domain.region.repository.RegionRepository;
 import com.localfit.domain.rent.client.RentTradeApiClient;
-import com.localfit.domain.rent.dto.RentTradeApiResponse;
+import com.localfit.domain.rent.dto.RentApiResponse;
 import com.localfit.domain.rent.entity.RentTransaction;
 import com.localfit.domain.rent.repository.RentTransactionRepository;
 import com.localfit.global.exception.CustomException;
+import com.localfit.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 시군구 단위 전월세 데이터 동기화를 담당하는 서비스.
+ * 시군구 1개 단위로 전월세 실거래가를 수집해 저장하는 서비스
+ * <p>
+ * 수집 저장은 이 서비스에서 담당한다.
  *
  */
 
@@ -33,22 +36,28 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class RentSigunguSyncService {
-    private static final String SUCCESS_CODE = "000";
-    private static final int MAX_RETRY = 3;
-    private static final long RETRY_DELAY_MS = 1000;
-    private static final long REQUEST_INTERVAL_MS = 200;
-    private static final int NUM_OF_ROWS = 1000;
+
+    private static final String SUCCESS_CODE = "000";          // API 정상 응답 코드
+    private static final int MAX_RETRY = 3;                    // API 호출 최대 재시도 횟수
+    private static final long RETRY_DELAY_MS = 1000;           // 재시도 간 대기시간 (시도마다 배로 증가)
+    private static final long REQUEST_INTERVAL_MS = 200;       // 페이지 요청 간 최소 간격 (Rate Limit 예방)
+    private static final int NUM_OF_ROWS = 1000;               // 페이지당 결과 수
     private static final DateTimeFormatter YM_FORMAT = DateTimeFormatter.ofPattern("yyyyMM");
 
     private final RentTradeApiClient rentTradeApiClient;
     private final RentTransactionRepository rentTransactionRepository;
     private final RegionRepository regionRepository;
 
-     // 시군구 1개에 대해 전체 대상 기간을 동기화한다.
-     // 이 메서드 단위로 트랜잭션이 걸려, 중간에 실패해도 앞서 처리한 시군구는 보존된다.
+    /**
+     * 시군구 1개에 대해 전체 대상 기간의 전월세 실거래가를 수집해 저장
+     *
+     * @param lawdCd   시군구 법정동코드 앞 5자리
+     * @param dealYmds 수집 대상 년월 목록(yyyymm, 최신순)
+     * @return 저장된 거래 건수
+     */
     @Transactional
     public int syncSigungu(String lawdCd, List<String> dealYmds) {
-        // 1) 이 시군구의 Region을 한 번에 조회해 "동 이름 → Region" Map으로 캐싱
+        // 이 시군구의 Region을 한 번에 조회해 "동 이름 → Region" Map으로 캐싱
         Map<String, Region> regionMap = regionRepository.findByRegionCodeStartingWith(lawdCd)
                 .stream()
                 .filter(r -> r.getDong() != null && !r.getDong().isBlank())
@@ -59,20 +68,19 @@ public class RentSigunguSyncService {
             return 0;
         }
 
-        // 2) 이 시군구의 기존 데이터 키를 한 번에 조회해 Set으로 캐싱
+        // 이 시군구의 기존 데이터 키를 한 번에 조회해 Set으로 캐싱
         LocalDate rangeStart = YearMonth.parse(dealYmds.getLast(), YM_FORMAT).atDay(1);
         LocalDate rangeEnd = YearMonth.parse(dealYmds.getFirst(), YM_FORMAT).atEndOfMonth();
         Set<String> existingKeys = new HashSet<>(
                 rentTransactionRepository.findDuplicateKeys(lawdCd, rangeStart, rangeEnd));
 
-        // 3) 월별로 수집 (페이지네이션 포함)
+        // 월별로 수집 후 일괄 저장
         List<RentTransaction> toSave = new ArrayList<>();
         for (String dealYmd : dealYmds) {
             toSave.addAll(collectMonth(lawdCd, dealYmd, regionMap, existingKeys));
             sleep(REQUEST_INTERVAL_MS);
         }
 
-        // 4) 일괄 저장
         if (!toSave.isEmpty()) {
             rentTransactionRepository.saveAll(toSave);
         }
@@ -81,36 +89,31 @@ public class RentSigunguSyncService {
         return toSave.size();
     }
 
-    // 특정 시군구/월의 데이터를 페이지네이션으로 끝까지 수집해 Entity 목록으로 변환한다.
-    // DB 저장은 하지 않고 목록만 반환한다(호출부에서 일괄 저장).
-    private List<RentTransaction> collectMonth(String lawdCd, String dealYmd,
-                                               Map<String, Region> regionMap,
-                                               Set<String> existingKeys) {
+    /**
+     * 특정 시군구/월의 데이터를 페이지네이션으로 끝까지 수집해 Entity 목록으로 반환한다.
+     * DB 저장은 하지 않고 목록만 반환한다 (호출부에서 일괄 저장).
+     */
+    private List<RentTransaction> collectMonth(String lawdCd, String dealYmd, Map<String, Region> regionMap, Set<String> existingKeys) {
         List<RentTransaction> result = new ArrayList<>();
         int pageNo = 1;
 
         while (true) {
-            RentTradeApiResponse response = fetchWithRetry(lawdCd, dealYmd, pageNo);
+            RentApiResponse response = fetchWithRetry(lawdCd, dealYmd, pageNo);
 
-            if (!SUCCESS_CODE.equals(response.getResultCode())) {
-                log.warn("[RentSync] lawdCd={}, dealYmd={} 응답코드 이상 - {}",
-                        lawdCd, dealYmd, response.getResultCode());
-                break;
-            }
+            validateResponse(response, lawdCd, dealYmd);
 
-            List<RentTradeApiResponse.Item> items = response.getItems();
+            List<RentApiResponse.Item> items = response.getItems();
             if (items.isEmpty()) {
                 break;
             }
 
-            for (RentTradeApiResponse.Item item : items) {
+            for (RentApiResponse.Item item : items) {
                 RentTransaction transaction = toEntity(item, regionMap, existingKeys);
                 if (transaction != null) {
                     result.add(transaction);
                 }
             }
 
-            // 가져온 건수가 요청 건수보다 적으면 마지막 페이지
             if (items.size() < NUM_OF_ROWS) {
                 break;
             }
@@ -121,12 +124,11 @@ public class RentSigunguSyncService {
         return result;
     }
 
-
-    // API 응답 1건을 Entity로 변환한다.
-    // Region 매칭 실패, 필수값 파싱 실패, 중복인 경우 null을 반환한다.
-    private RentTransaction toEntity(RentTradeApiResponse.Item item,
-                                     Map<String, Region> regionMap,
-                                     Set<String> existingKeys) {
+    /**
+     * API 응답 1건을 RentTransaction 엔티티로 변환한다.
+     * Region 매칭 실패, 필수값 파싱 실패, 중복인 경우 null을 반환한다.
+     */
+    private RentTransaction toEntity(RentApiResponse.Item item, Map<String, Region> regionMap, Set<String> existingKeys) {
         Region region = regionMap.get(safeTrim(item.getUmdNm()));
         if (region == null) {
             return null;
@@ -141,8 +143,7 @@ public class RentSigunguSyncService {
         Long deposit = parseAmount(item.getDeposit());
         String aptName = safeTrim(item.getAptNm());
 
-        // 중복 체크 - DB 조회 없이 메모리에서 판별
-        // add()가 false면 이미 존재 (기존 DB 데이터 + 같은 배치 내 중복 모두 걸러짐)
+        // add()가 false면 이미 존재 — 기존 DB 데이터와 같은 배치 내 중복 모두 걸러짐
         String key = buildKey(region.getId(), aptName, area, dealDate, deposit);
         if (!existingKeys.add(key)) {
             return null;
@@ -160,13 +161,18 @@ public class RentSigunguSyncService {
                 .build();
     }
 
-    //중복 판별용 키 생성 - Repository의 CONCAT 쿼리와 형식이 일치해야 한다
-    private String buildKey(Long regionId, String aptName, Double area, LocalDate dealDate, Long deposit) {
-        return regionId + "|" + aptName + "|" + area + "|" + dealDate + "|" + deposit;
+    /** API 응답 코드를 검증한다. 정상(000)이 아니면 예외를 던진다 */
+    private void validateResponse(RentApiResponse response, String lawdCd, String dealYmd) {
+        if (!SUCCESS_CODE.equals(response.getResultCode())) {
+            log.error("[RentSync] lawdCd={}, dealYmd={} 응답코드 이상 - {}", lawdCd, dealYmd, response.getResultCode());
+            throw new CustomException(response.getResultCode().equals("000")
+                    ? ErrorCode.EXTERNAL_API_INVALID_RESPONSE
+                    : ErrorCode.EXTERNAL_API_ERROR);
+        }
     }
 
-    // 외부 API 호출 - 실패 시 지수 백오프로 재시도
-    private RentTradeApiResponse fetchWithRetry(String lawdCd, String dealYmd, int pageNo) {
+    /** API 응답의 년/월/일을 LocalDate로 변환한다. 파싱 실패 시 null을 반환한다 */
+    private RentApiResponse fetchWithRetry(String lawdCd, String dealYmd, int pageNo) {
         CustomException lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
@@ -174,15 +180,22 @@ public class RentSigunguSyncService {
                 return rentTradeApiClient.fetch(lawdCd, dealYmd, pageNo, NUM_OF_ROWS);
             } catch (CustomException e) {
                 lastException = e;
-                log.warn("[RentSync] lawdCd={}, dealYmd={}, page={} 호출 실패 ({}회)",
-                        lawdCd, dealYmd, pageNo, attempt);
+                log.warn("[RentSync] lawdCd={}, dealYmd={}, page={} 호출 실패 ({}회)", lawdCd, dealYmd, pageNo, attempt);
                 sleep(RETRY_DELAY_MS * attempt);
             }
         }
+
+        log.error("[RentSync] lawdCd={}, dealYmd={}, page={} 최대 재시도({}) 초과", lawdCd, dealYmd, pageNo, MAX_RETRY);
         throw lastException;
     }
 
-    private LocalDate toDealDate(RentTradeApiResponse.Item item) {
+    /** 중복 판별용 키를 생성한다. Repository의 CONCAT 쿼리와 형식이 일치해야 한다 */
+    private String buildKey(Long regionId, String aptName, Double area, LocalDate dealDate, Long deposit) {
+        return regionId + "|" + aptName + "|" + area + "|" + dealDate + "|" + deposit;
+    }
+
+    /** API 응답의 년/월/일을 LocalDate로 변환한다. 파싱 실패 시 null을 반환한다 */
+    private LocalDate toDealDate(RentApiResponse.Item item) {
         Integer year = parseInteger(item.getDealYear());
         Integer month = parseInteger(item.getDealMonth());
         Integer day = parseInteger(item.getDealDay());
@@ -195,7 +208,7 @@ public class RentSigunguSyncService {
         }
     }
 
-    // "29,768" 같은 콤마 포함 문자열을 숫자로 변환 (전세는 월세가 "0")
+    /** "29,768" 같은 콤마 포함 문자열을 Long으로 변환한다. 파싱 실패 시 0을 반환한다 */
     private Long parseAmount(String raw) {
         if (raw == null || raw.isBlank()) return 0L;
         try {
@@ -205,6 +218,7 @@ public class RentSigunguSyncService {
         }
     }
 
+    /** 문자열을 Double로 변환한다. 파싱 실패 시 null을 반환한다 */
     private Double parseDouble(String raw) {
         if (raw == null || raw.isBlank()) return null;
         try {
@@ -214,6 +228,7 @@ public class RentSigunguSyncService {
         }
     }
 
+    /** 문자열을 Integer로 변환한다. 파싱 실패 시 null을 반환한다 */
     private Integer parseInteger(String raw) {
         if (raw == null || raw.isBlank()) return null;
         try {

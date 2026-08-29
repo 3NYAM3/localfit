@@ -2,6 +2,9 @@ package com.localfit.domain.user.dto;
 
 import lombok.Getter;
 
+/**
+ * 로그인/토큰재발급 응답
+ */
 @Getter
 public class TokenResponse {
 

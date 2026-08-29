@@ -25,10 +25,10 @@ public class RecommendationController {
      * 로그인한 사용자가 등록한 관심지역들을, 지표별 중요도에 따라
      * 계층별(시군구/시도/수도권) 종합 점수와 함께 반환한다.
      *
-     * @param userDetails 인증된 사용자 정보 (JWT)
-     * @param rentType    임대 유형 (기본값: JEONSE)
-     * @param weightRequest   지표별 중요도 (기본값: 전 지표 NORMAL)
-     * @return 관심지역별 계층별 종합 점수 목록 (우선순위 순 정렬)
+     * @param userDetails   인증된 사용자 정보 (JWT)
+     * @param rentType      임대 유형
+     * @param weightRequest 지표별 중요도
+     * @return 관심지역별 계층별 종합 점수 목록
      */
     @GetMapping("/api/favorites/scores")
     public ApiResponse<List<FavoriteRegionScoreResponse>> getFavoriteScores(

@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * 관심지역 일관 등록 요청
+ */
 @Getter
 @NoArgsConstructor
 public class FavoriteRegionBatchRequest {

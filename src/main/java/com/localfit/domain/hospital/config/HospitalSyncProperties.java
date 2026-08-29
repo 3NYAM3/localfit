@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 병원 데이터 수집 관련 설정.
- * HIRA는 법정동 코드와 다른 자체 시도코드 체계를 사용하므롷 대상코드를 설정으로 분리하여 관리
+ * 병원 데이터 수집 관련 설정
+ * HIRA는 법정동 코드와 다른 자체 시도코드 체계를 사용하므로 대상코드를 설정으로 분리하여 관리
  */
 @Getter
 @Setter

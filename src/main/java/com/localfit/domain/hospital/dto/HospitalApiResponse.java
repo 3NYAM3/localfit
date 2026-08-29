@@ -8,23 +8,26 @@ import lombok.Getter;
 import java.util.List;
 
 /**
- * HIRA 병원정보서비스의 XML응답 매핑 DTO
+ * HIRA 병원정보서비스의 JSON응답 매핑 DTO
  */
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class HiraHospitalResponse {
+public class HospitalApiResponse {
 
     @JsonProperty("response")
-    private ResponseBody response;
+    private ResponseWrapper response;
 
+    /** 응답의 결과 코드를 반환 */
     public String getResultCode() {
         return response == null ? null : response.header.resultCode;
     }
 
+    /** 응답의 결과 메시지를 반환 */
     public String getResultMessage() {
         return response == null ? null : response.header.resultMsg;
     }
 
+    /** 응답에 포함된 병원 데이터 목록을 반환 */
     public List<HospitalItem> getItems() {
         if (response == null || response.body == null || response.body.items == null) {
             return List.of();
@@ -32,13 +35,10 @@ public class HiraHospitalResponse {
         return response.body.items.item == null ? List.of() : response.body.items.item;
     }
 
-    public int getTotalCount() {
-        return response == null || response.body == null ? 0 : response.body.totalCount;
-    }
-
+    /** response 래퍼 - JSON 최상위 "response" 키에 대응 */
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ResponseBody {
+    public static class ResponseWrapper {
         private Header header;
         private Body body;
     }
@@ -62,29 +62,25 @@ public class HiraHospitalResponse {
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Items {
-        /**
-         * 결과가 1건일 때 배열이 아닌 단일 객체로 올 수 있어 방어적으로 처리.
-         */
+        /**  결과가 1건일 때 배열이 아닌 단일 객체로 올 수 있어 방어적으로 처리. */
         @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
         private List<HospitalItem> item;
     }
 
-    /**
-     * 병원 1건 (필요한 필드만 추림, 진료과목별 인원수 등은 제외)
-     */
+    /** 병원 1건 */
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class HospitalItem {
-        private String ykiho;
+        private String ykiho;           // 암호화된 요양기관 고유키
 
         @JsonProperty("yadmNm")
         private String hospitalName;
 
         @JsonProperty("clCd")
-        private String clCode;
+        private String clCode;          // 종별코드
 
         @JsonProperty("clCdNm")
-        private String clCodeName;
+        private String clCodeName;      // 종별코드명
 
         @JsonProperty("sidoCdNm")
         private String sidoName;

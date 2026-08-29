@@ -17,9 +17,6 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Spring Security 설정.
- * - 회원가입/로그인/재발급, 지역·전월세·추천 조회 API는 인증 없이 허용
- * - 그 외 API는 JWT 인증 필요
- * - JWT 기반이므로 서버가 세션을 유지하지 않는 STATELESS 정책 사용
  */
 
 @Configuration
@@ -46,15 +43,15 @@ public class SecurityConfig {
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                             response.setStatus(401);
 
-                            ApiResponse<Void> body = ApiResponse.error(401, "인증이 필요합니다.");
-                            response.getWriter().write(objectMapper.writeValueAsString(body));
+                            response.getWriter().write(
+                                    objectMapper.writeValueAsString(
+                                            ApiResponse.error(401, "인증이 필요합니다.")));
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
                         // 인증 불필요 - 공개 API
                         .requestMatchers("/api/auth/signup", "/api/auth/signin", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/regions/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/recommendations").permitAll()
                         .requestMatchers("/internal/**").permitAll()// 개발용 동기화 API - 추후 ADMIN 권한으로 제한 예정
                         // 나머지는 인증 필요 (signout, me 등)
                         .anyRequest().authenticated()

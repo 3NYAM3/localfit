@@ -15,6 +15,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 회원 인증 관련 비즈니스 로직 서비스
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -24,63 +27,83 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
 
+    /**
+     * 신규회원 등록
+     *
+     * @param request 이메일, 비밀번호, 닉네임
+     * @return 생성된 사용자 ID
+     */
     @Transactional
-    public Long signup(SignupRequest request){
-        if(userRepository.existsByEmail(request.getEmail())){
+    public Long signup(SignupRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
-        User user = User.builder()
+        return userRepository.save(User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
                 .role(UserRole.USER)
-                .build();
-
-        return userRepository.save(user).getId();
+                .build()).getId();
     }
 
+    /**
+     * 로그인하여 Access/RefreshToken 발급
+     *
+     * @param request 이메일, 비밀번호
+     * @return AccessToken, RefreshToken
+     */
     @Transactional(readOnly = true)
-    public TokenResponse signIn(SignInRequest request){
+    public TokenResponse signIn(SignInRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(()->new CustomException(ErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         return issueTokens(user.getId(), user.getEmail());
     }
 
+    /**
+     * RefreshToken을 검증해 새 Access/RefreshToken을 발급
+     *
+     * @param request RefreshToken
+     * @return 새로 발급된 AccessToken, RefreshToken
+     */
     @Transactional(readOnly = true)
-    public TokenResponse refresh(RefreshRequest request){
+    public TokenResponse refresh(RefreshRequest request) {
         String refreshToken = request.getRefreshToken();
 
-        if(!jwtTokenProvider.validateToken(refreshToken)){
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         Long userId = jwtTokenProvider.getUserId(refreshToken);
 
-        if(!refreshTokenService.isValid(userId, refreshToken)){
+        if (!refreshTokenService.isValid(userId, refreshToken)) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
-        String email = jwtTokenProvider.getEmail(refreshToken);
-
-        return issueTokens(userId, email);
+        return issueTokens(userId, jwtTokenProvider.getEmail(refreshToken));
     }
 
-    public void signOut(Long userId){
+    /**
+     * 로그아웃
+     *
+     * @param userId 사용자ID
+     */
+    public void signOut(Long userId) {
         refreshTokenService.delete(userId);
     }
 
-    private TokenResponse issueTokens(Long userId, String email){
+    /** AccessToken과 RefreshToken을 함께 발급하고 RefreshToken을 Redis에 저장 */
+    private TokenResponse issueTokens(Long userId, String email) {
         String accessToken = jwtTokenProvider.createAccessToken(userId, email);
         String refreshToken = jwtTokenProvider.createRefreshToken(userId, email);
 
         refreshTokenService.save(userId, refreshToken);
 
-        return new TokenResponse(accessToken,refreshToken);
+        return new TokenResponse(accessToken, refreshToken);
     }
 }

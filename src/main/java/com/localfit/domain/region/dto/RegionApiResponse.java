@@ -7,17 +7,17 @@ import lombok.Getter;
 import java.util.List;
 
 /**
- * 행정안전부 법정동코드 API(StanReginCd)의 JSON 응답을 매핑하는 DTO.
+ * 행정안전부 법정동코드 API(StanReginCd)의 JSON 응답을 매핑 DTO
  */
 
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RegionCodeApiResponse {
+public class RegionApiResponse {
 
     @JsonProperty("StanReginCd")
-    private List<StanReginCdBlock> stanReginCd;
+    private List<Block> stanReginCd;
 
-    //응답의 결과코드
+    /** 응답의 결과 코드를 반환 */
     public String getResultCode() {
         if (stanReginCd == null) return null;
         return stanReginCd.stream()
@@ -29,8 +29,8 @@ public class RegionCodeApiResponse {
                 .orElse(null);
     }
 
-    //응답의 결과 메시지
-    public String getResultMsg() {
+    /** 응답의 결과 메시지를 반환 */
+    public String getResultMessage() {
         if (stanReginCd == null) return null;
         return stanReginCd.stream()
                 .filter(block -> block.getHead() != null)
@@ -41,8 +41,8 @@ public class RegionCodeApiResponse {
                 .orElse(null);
     }
 
-    //응답에 포함된 실제 지역 데이터 목록
-    public List<RegionCodeItem> getItems() {
+    /** 응답에 포함된 실제 지역 데이터 목록을 반환 */
+    public List<Item> getItems() {
         if (stanReginCd == null) return List.of();
         return stanReginCd.stream()
                 .filter(block -> block.getRow() != null)
@@ -50,18 +50,18 @@ public class RegionCodeApiResponse {
                 .toList();
     }
 
-    //StanReginCd 배열의 개별 원소
+    /** StanReginCd 배열의 개별 원소 */
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class StanReginCdBlock {
-        private List<HeadItem> head;
-        private List<RegionCodeItem> row;
+    public static class Block {
+        private List<Header> head;
+        private List<Item> row;
     }
 
-    //응답 메타 정보
+    /** 응답 메타 정보  */
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class HeadItem {
+    public static class Header {
         private Integer totalCount;   // 전체 결과 건수
         private String numOfRows;     // 한 페이지 결과 수 (응답에서 문자열로 옴)
         private String pageNo;        // 현재 페이지 번호 (응답에서 문자열로 옴)
@@ -71,7 +71,7 @@ public class RegionCodeApiResponse {
         private Result result;        // 처리 결과 코드/메시지
     }
 
-    //처리 결과
+    /** API 처리 결과 코드/메시지 */
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Result {
@@ -79,10 +79,10 @@ public class RegionCodeApiResponse {
         private String resultMsg;
     }
 
-    //지역정보
+    /** 법정동 1건 */
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class RegionCodeItem {
+    public static class Item {
         @JsonProperty("region_cd")
         private String regionCd;          // 법정동코드 10자리 (예: 1171010100)
 
@@ -104,5 +104,4 @@ public class RegionCodeApiResponse {
         @JsonProperty("locallow_nm")
         private String locallowNm;        // 최하위지역명 (동/리 이름만, 예: 잠실동)
     }
-
 }

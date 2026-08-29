@@ -11,11 +11,15 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * 도로명주소 문자열에서 시도/시군구를 추출해 Region과 매칭하는 컴포넌트
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class RegionAddressMatcher {
 
+    /** 공공데이터 기관마다 다른 시도명 표기를 우리 Region 표기로 정규화하는 매핑 */
     private static final Map<String, String> SIDO_ALIAS = Map.of(
             "서울시", "서울특별시",
             "서울특별시", "서울특별시",
@@ -27,9 +31,14 @@ public class RegionAddressMatcher {
 
     private final RegionRepository regionRepository;
 
-    private Map<String, Region> sigunguIndex;
+    private Map<String, Region> sigunguIndex;   //최초 1회 로딩 후 재사용
 
-    //도로명주소에서 시도+시군구를 추출해 일치하는 Region을 찾는다.
+    /**
+     * 도로명주소에서 시도/시군구를 추출해 일치하는 Region을 찾음
+     *
+     * @param roadAddress 도로명주소 문자열
+     * @return 매칭된 Region
+     */
     public Region match(String roadAddress) {
         if (roadAddress == null || roadAddress.isBlank()) {
             return null;
@@ -50,7 +59,7 @@ public class RegionAddressMatcher {
         return findSigunguIndex().get(sido + "|" + sigungu);
     }
 
-    // 시군구 단위 대표 Region 인덱스를 1회 생성해 캐싱 (매 호출마다 DB 조회 방지)
+    /** 시군구 단위 대표 Region 인덱스를 1회 생성해 캐싱한다 */
     private Map<String, Region> findSigunguIndex() {
         if (sigunguIndex == null) {
             sigunguIndex = regionRepository.findAll().stream()

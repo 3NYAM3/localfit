@@ -5,7 +5,6 @@ import lombok.Getter;
 
 /**
  * 모든 API 응답을 감싸는 공통 포맷.
- * 프론트엔드(React)가 항상 동일한 구조({status, message, data})로 응답을 받을 수 있게 하기 위함.
  */
 
 @Getter
@@ -16,17 +15,17 @@ public class ApiResponse<T> {
     private String message;
     private T data;
 
-    //성공응답-기본메시지
+    /** 성공 응답 - 기본 메시지("OK") */
     public static <T> ApiResponse<T> ok(T data) {
         return new ApiResponse<>(200, "OK", data);
     }
 
-    //성공응답- 커스텀메시지 포함
+    /** 성공 응답 - 커스텀 메시지 */
     public static <T> ApiResponse<T> ok(String message, T data) {
         return new ApiResponse<>(200, message, data);
     }
 
-    //실패응답
+    /** 실패 응답 */
     public static ApiResponse<Void> error(int status, String message) {
         return new ApiResponse<>(status, message, null);
     }

@@ -11,19 +11,25 @@ import java.util.Optional;
 
 public interface FavoriteRegionRepository extends JpaRepository<FavoriteRegion, Long> {
 
-    //특정 사용자의 관심지역 목록을 Region정보와 함께 조회
+    /**
+     * 사용자의 관심지역 목록을 우선순위 순으로 조회
+     *
+     * @param userId 사용자 ID
+     * @return 관심지역 목록
+     */
     @Query("""
-        SELECT f FROM FavoriteRegion f
-        JOIN FETCH f.region
-        WHERE f.user.id = :userId
-        ORDER BY f.priority ASC
-        """)
+            SELECT f FROM FavoriteRegion f
+            JOIN FETCH f.region
+            WHERE f.user.id = :userId
+            ORDER BY f.priority ASC
+            """)
     List<FavoriteRegion> findAllByUserId(@Param("userId") Long userId);
 
-    Optional<FavoriteRegion> findByUserIdAndRegionId(Long userId, Long regionId);
-
-    boolean existsByUserIdAndRegionId(Long userId, Long regionId);
-
+    /**
+     * 특정 사용자의 관심지역을 전부 삭제한다.
+     *
+     * @param userId 삭제 대상 사용자 ID
+     */
     @Modifying
     @Query("DELETE FROM FavoriteRegion f WHERE f.user.id = :userId")
     void deleteAllByUserId(@Param("userId") Long userId);

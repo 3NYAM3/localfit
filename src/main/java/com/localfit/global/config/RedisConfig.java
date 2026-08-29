@@ -16,6 +16,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Redis 캐시 설정
+ */
 @EnableCaching
 @Configuration
 public class RedisConfig {

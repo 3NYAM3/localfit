@@ -6,12 +6,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 병원 데이터 수집 트리거 API
+ */
 @RestController
 @RequiredArgsConstructor
 public class HospitalSyncController {
 
     private final HospitalSyncService hospitalSyncService;
 
+    /**
+     * HIRA 병원정보서비스에서 수도권 상급병원/종합병원/병원 데이터를 수집
+     *
+     * @return 저장된 병원 건수
+     */
     @PostMapping("/internal/hospital/sync")
     public ApiResponse<String> sync(){
         int count = hospitalSyncService.sync();

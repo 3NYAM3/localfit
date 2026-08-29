@@ -8,10 +8,13 @@ import lombok.Getter;
 
 import java.util.List;
 
+/**
+ * 국토교통부 아파트 전월세 실거래가의 XML 응답매핑 DTO
+ */
 @Getter
 @JacksonXmlRootElement(localName = "response")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RentTradeApiResponse {
+public class RentApiResponse {
 
     @JacksonXmlProperty(localName = "header")
     private Header header;
@@ -19,17 +22,17 @@ public class RentTradeApiResponse {
     @JacksonXmlProperty(localName = "body")
     private Body body;
 
-    //결과 코드
+    /** 응답 결과 코드 반환 */
     public String getResultCode() {
         return header == null ? null : header.resultCode;
     }
 
-    //결과 메시지
-    public String getResultMsg() {
+    /** 응답 결과 메시지 반환 */
+    public String getResultMessage() {
         return header == null ? null : header.resultMsg;
     }
 
-    //실거래 데이터 목록
+    /** 응답에 포함된 전월세 실거래 목록 반환. */
     public List<Item> getItems() {
         if (body == null || body.items == null || body.items.item == null) {
             return List.of();
@@ -71,6 +74,7 @@ public class RentTradeApiResponse {
         private List<Item> item;
     }
 
+    /** 전월세 실거래 1건 */
     @Getter
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Item {

@@ -5,6 +5,9 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
+/**
+ * 관심지역 조회 응답
+ */
 @Getter
 public class FavoriteRegionResponse {
 
