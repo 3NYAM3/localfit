@@ -42,10 +42,12 @@ public class FavoriteRegionScoreResponse {
     public static class WeightInfo {
         private final double housing;
         private final double subway;
+        private final double hospital;
 
         public WeightInfo(Map<IndicatorType, Double> weights) {
             this.housing = toPercent(weights.get(IndicatorType.HOUSING));
             this.subway = toPercent(weights.get(IndicatorType.SUBWAY));
+            this.hospital = toPercent(weights.get(IndicatorType.HOSPITAL));
         }
 
         private double toPercent(Double ratio) {
@@ -59,11 +61,13 @@ public class FavoriteRegionScoreResponse {
         private final double totalScore;         // 가중합산된 종합 점수 (0~100, 높을수록 좋음)
         private final RankingInfo housingRanking;
         private final RankingInfo subwayRanking;
+        private final RankingInfo hospitalRanking;
 
-        public TierScore(double totalScore, RankingInfo housingRanking, RankingInfo subwayRanking) {
+        public TierScore(double totalScore, RankingInfo housingRanking, RankingInfo subwayRanking, RankingInfo hospitalRanking) {
             this.totalScore = Math.round(totalScore * 10) / 10.0;
             this.housingRanking = housingRanking;
             this.subwayRanking = subwayRanking;
+            this.hospitalRanking = hospitalRanking;
         }
     }
 }

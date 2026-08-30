@@ -1,5 +1,7 @@
 package com.localfit.domain.recommendation.service;
 
+import com.localfit.domain.hospital.dto.HospitalCountProjection;
+import com.localfit.domain.hospital.repository.HospitalRepository;
 import com.localfit.domain.recommendation.dto.*;
 import com.localfit.domain.region.entity.Region;
 import com.localfit.domain.rent.config.RentSyncProperties;
@@ -38,6 +40,7 @@ public class FavoriteRegionScoreService {
     private final FavoriteRegionRepository favoriteRegionRepository;
     private final RentTransactionRepository rentTransactionRepository;
     private final SubwayStationRepository subwayStationRepository;
+    private final HospitalRepository hospitalRepository;
     private final RentSyncProperties rentSyncProperties;
 
     /**
@@ -59,48 +62,63 @@ public class FavoriteRegionScoreService {
         // 수도권 전체 통계는 모든 관심지역에 동일하므로 1회만 조회해 재사용
         List<RegionRentStatsProjection> capitalRentStats = rentTransactionRepository.findAllRegionStats(start, end, MIN_TRANSACTION_COUNT);
         List<SubwayCountProjection> capitalSubwayStats = subwayStationRepository.countAllBySigungu();
+        List<HospitalCountProjection> capitalHospitalStats = hospitalRepository.countAllBySigungu();
 
         Map<IndicatorType, Double> weights = resolveWeights(weightRequest);
 
         return favoriteRegions.stream()
-                .map(favoriteRegion -> toScoreResponse(favoriteRegion, rentType, start, end, capitalRentStats, capitalSubwayStats, weights))
+                .map(favoriteRegion -> toScoreResponse(favoriteRegion, rentType, start, end,
+                        capitalRentStats, capitalSubwayStats, capitalHospitalStats, weights))
                 .toList();
     }
 
-    /** 관심지역 1건에 대해 계층별 종합 점수를 계산해 하나의 응답으로 만듬 */
+    /**
+     * 관심지역 1건에 대해 계층별 종합 점수를 계산해 하나의 응답으로 만듬
+     */
     private FavoriteRegionScoreResponse toScoreResponse(FavoriteRegion favorite, RentType rentType, LocalDate start, LocalDate end,
                                                         List<RegionRentStatsProjection> capitalRentStats,
                                                         List<SubwayCountProjection> capitalSubwayStats,
+                                                        List<HospitalCountProjection> capitalHospitalStats,
                                                         Map<IndicatorType, Double> weights) {
         Region region = favorite.getRegion();
 
-        //주거비
+        // 주거비 - 시군구/시도는 이 지역 기준으로 조회, 수도권은 미리 조회한 값 재사용
         List<RegionRentStatsProjection> sigunguRentStats = rentTransactionRepository.findRegionStatsBySigungu(region.getSido(), region.getSigungu(), start, end, MIN_TRANSACTION_COUNT);
         List<RegionRentStatsProjection> sidoRentStats = rentTransactionRepository.findRegionStatsBySido(region.getSido(), start, end, MIN_TRANSACTION_COUNT);
 
-        RankingInfo housingSigungu = calculateHousingRanking(toAmountMap(sigunguRentStats, rentType), region.getId(), region.getSigungu());
-        RankingInfo housingSido = calculateHousingRanking(toAmountMap(sidoRentStats, rentType), region.getId(), region.getSido());
         RankingInfo housingCapital = calculateHousingRanking(toAmountMap(capitalRentStats, rentType), region.getId(), "수도권 전체");
+        RankingInfo housingSido = calculateHousingRanking(toAmountMap(sidoRentStats, rentType), region.getId(), region.getSido());
+        RankingInfo housingSigungu = calculateHousingRanking(toAmountMap(sigunguRentStats, rentType), region.getId(), region.getSigungu());
 
-        //지하철
+        // 지하철 - 시도/수도권만 원본 계산, 시군구는 시도 값을 상속
         List<SubwayCountProjection> sidoSubwayStats = subwayStationRepository.countBySido(region.getSido());
 
-        RankingInfo subwaySido = calculateSubwayRanking(sidoSubwayStats, region.getSigungu(), region.getSido());
-        RankingInfo subwayCapital = calculateSubwayRanking(sidoSubwayStats, region.getSido() + "|" + region.getSigungu(), "수도권 전체");
+        RankingInfo subwayCapital = calculateFacilityRanking(toSubwayCountMap(capitalSubwayStats), region.getSido() + "|" + region.getSigungu(), "수도권 전체");
+        RankingInfo subwaySido = calculateFacilityRanking(toSubwayCountMap(sidoSubwayStats), region.getSido() + "|" + region.getSigungu(), region.getSido());
         RankingInfo subwaySigungu = inheritAsSigunguRanking(subwaySido, region.getSigungu());
 
-        //계층별 종합 점수 계산
+        // 병원 - 지하철과 동일한 패턴 (시군구 단위 매칭이라 시도값 상속)
+        List<HospitalCountProjection> sidoHospitalStats = hospitalRepository.countBySido(region.getSido());
+
+        RankingInfo hospitalCapital = calculateFacilityRanking(toHospitalCountMap(capitalHospitalStats), region.getSido() + "|" + region.getSigungu(), "수도권 전체");
+        RankingInfo hospitalSido = calculateFacilityRanking(toHospitalCountMap(sidoHospitalStats), region.getSido() + "|" + region.getSigungu(), region.getSido());
+        RankingInfo hospitalSigungu = inheritAsSigunguRanking(hospitalSido, region.getSigungu());
+
+        // 계층별로 지표를 Map으로 모아서 종합 점수 계산
         Map<IndicatorType, RankingInfo> sigunguRankings = new EnumMap<>(IndicatorType.class);
         sigunguRankings.put(IndicatorType.HOUSING, housingSigungu);
         sigunguRankings.put(IndicatorType.SUBWAY, subwaySigungu);
+        sigunguRankings.put(IndicatorType.HOSPITAL, hospitalSigungu);
 
         Map<IndicatorType, RankingInfo> sidoRankings = new EnumMap<>(IndicatorType.class);
         sidoRankings.put(IndicatorType.HOUSING, housingSido);
         sidoRankings.put(IndicatorType.SUBWAY, subwaySido);
+        sidoRankings.put(IndicatorType.HOSPITAL, hospitalSido);
 
         Map<IndicatorType, RankingInfo> capitalRankings = new EnumMap<>(IndicatorType.class);
         capitalRankings.put(IndicatorType.HOUSING, housingCapital);
         capitalRankings.put(IndicatorType.SUBWAY, subwayCapital);
+        capitalRankings.put(IndicatorType.HOSPITAL, hospitalCapital);
 
         return new FavoriteRegionScoreResponse(
                 region.getId(), favorite.getPriority(), region.getSido(), region.getSigungu(), region.getDong(),
@@ -135,7 +153,9 @@ public class FavoriteRegionScoreService {
 
     // ==================== 계층별 종합 점수 ====================
 
-    /** 하나의 계층에서 각 지표의 순위를 가중치로 합산해 종합점수를 계산 */
+    /**
+     * 하나의 계층에서 각 지표의 순위를 가중치로 합산해 종합점수를 계산
+     */
     private FavoriteRegionScoreResponse.TierScore buildTierScore(Map<IndicatorType, RankingInfo> rankings, Map<IndicatorType, Double> weights) {
         double totalScore = 0;
         for (IndicatorType type : IndicatorType.values()) {
@@ -145,7 +165,10 @@ public class FavoriteRegionScoreService {
         }
 
         return new FavoriteRegionScoreResponse.TierScore(
-                totalScore, rankings.get(IndicatorType.HOUSING), rankings.get(IndicatorType.SUBWAY));
+                totalScore,
+                rankings.get(IndicatorType.HOUSING),
+                rankings.get(IndicatorType.SUBWAY),
+                rankings.get(IndicatorType.HOSPITAL));
     }
 
     // ==================== 주거비 지표 ====================
@@ -180,26 +203,19 @@ public class FavoriteRegionScoreService {
         return new RankingInfo(scopeName, totalCount, rank, percentile);
     }
 
-    // ==================== 지하철 지표 ====================
+    // ==================== 지하철/병원 지표 ====================
 
-    /** 값 목록 안에서 특정 지역의 지하철 접근성 순위를 계산 */
-    private RankingInfo calculateSubwayRanking(List<SubwayCountProjection> stats, String targetKey, String scopeName) {
-        boolean isCapitalScope = targetKey.contains("|");
-
-        Map<String, Double> countByKey = stats.stream()
-                .collect(Collectors.toMap(
-                        s -> isCapitalScope ? s.getSido() + "|" + s.getSigungu() : s.getSigungu(),
-                        s -> s.getStationCount().doubleValue(),
-                        (a, b) -> a
-                ));
-
+    /**
+     * 지하철/병원 처럼 많을수록 좋음 + 시군구 단위 매칭인 지표의 순위를 계산
+     */
+    private RankingInfo calculateFacilityRanking(Map<String, Double> countByKey, String targetKey, String scopeName) {
         Double myValue = countByKey.get(targetKey);
         if (myValue == null || countByKey.size() < 2) {
             return null;
         }
 
         List<Double> sorted = countByKey.values().stream()
-                .sorted((a, b) -> Double.compare(b, a))
+                .sorted((a, b) -> Double.compare(b, a))   // 내림차순 - 많을수록 1등
                 .toList();
 
         int rank = sorted.indexOf(myValue) + 1;
@@ -221,5 +237,29 @@ public class FavoriteRegionScoreService {
                 sigunguName, sidoRanking.getTotalCount(), sidoRanking.getRank(),
                 sidoRanking.getPercentile(), true
         );
+    }
+
+    // ==================== 지하철 지표 ====================
+
+    /** 지하철 통계 목록을 "키 → 역 개수" 맵으로 변환 */
+    private Map<String, Double> toSubwayCountMap(List<SubwayCountProjection> stats) {
+        return stats.stream()
+                .collect(Collectors.toMap(
+                        s -> s.getSido() + "|" + s.getSigungu(),
+                        s -> s.getStationCount().doubleValue(),
+                        (a, b) -> a
+                ));
+    }
+
+    // ==================== 병원 지표 ====================
+
+    /** 병원 통계 목록을 "키 → 병원 개수" 맵으로 변환 */
+    private Map<String, Double> toHospitalCountMap(List<HospitalCountProjection> stats) {
+        return stats.stream()
+                .collect(Collectors.toMap(
+                        s -> s.getSido() + "|" + s.getSigungu(),
+                        s -> s.getHospitalCount().doubleValue(),
+                        (a, b) -> a
+                ));
     }
 }

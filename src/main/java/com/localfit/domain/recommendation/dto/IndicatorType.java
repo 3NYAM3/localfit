@@ -5,5 +5,6 @@ package com.localfit.domain.recommendation.dto;
  */
 public enum IndicatorType {
     HOUSING,
-    SUBWAY
+    SUBWAY,
+    HOSPITAL
 }
