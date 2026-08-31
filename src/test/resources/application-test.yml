@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect:
+    show-sql: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: test-secret-key-for-junit-test-must-be-at-least-256-bits-long
+  access-token-validity-ms: 1800000
+  refresh-token-validity-ms: 604800000
+
+public-data:
+  service-key: test-service-key
+  region-code:
+    target-keywords: 서울특별시
+    target-sido-codes: 11
+  rent-trade:
+    months-to-collect: 6
+  subway:
+    data-file-path: data/subway_stations.xlsx
+  hospital:
+    target-sido-codes: 110000
+    target-cl-codes: 01,11,21
