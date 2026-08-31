@@ -57,3 +57,34 @@
 | 아파트 전월세 실거래가 | 국토교통부 | XML | 지역별 주거비 통계/점수 | 월 단위 |
 | 전국도시철도역사정보표준데이터 | 국가철도공단 | 파일데이터(XLSX) | 지역별 교통 접근성 통계/점수 | 연 단위 |
 | 건강보험심사평가원_병원정보서비스 | 건강보험심사평가원 | JSON | 의료 접근성 통계/점수 | 수시 |
+
+---
+
+## 실행 방법
+
+1. `application-example.yml`을 복사해 `application.yml` 생성
+```bash
+   cp src/main/resources/application-example.yml src/main/resources/application.yml
+```
+
+2. 다음 값들을 실제 값으로 변경
+    - `spring.datasource.username` / `password` — MySQL 계정
+    - `jwt.secret` — 256비트 이상의 임의 문자열
+    - `public-data.service-key` — [공공데이터포털](https://www.data.go.kr)에서 발급
+
+3. 지하철역 데이터 파일 배치
+    - `src/main/resources/data/subway_stations.xlsx`
+    - [국가철도공단_전국도시철도역사정보표준데이터](https://www.data.go.kr) 다운로드
+
+4. Docker로 MySQL, Redis 실행
+```bash
+   docker-compose up -d
+```
+
+5. 애플리케이션 실행 후 데이터 수집 (순서 중요)
+```
+   POST /internal/regions/sync    # 법정동 마스터 (필수 선행)
+   POST /internal/rent/sync       # 전월세 실거래가
+   POST /internal/subway/sync     # 지하철역
+   POST /internal/hospital/sync   # 병원
+```
