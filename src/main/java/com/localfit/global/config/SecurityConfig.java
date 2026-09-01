@@ -53,6 +53,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/signup", "/api/auth/signin", "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/regions/**").permitAll()
                         .requestMatchers("/internal/**").permitAll()// 개발용 동기화 API - 추후 ADMIN 권한으로 제한 예정
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll() //Swagger
                         // 나머지는 인증 필요 (signout, me 등)
                         .anyRequest().authenticated()
                 )
