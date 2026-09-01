@@ -36,8 +36,20 @@ out/
 ### VS Code ###
 .vscode/
 
+### Node / React ###
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.*.local
+
 ### Sensitive Configuration ###
 application.yml
 application-*.yml
-!src/main/resources/application-example.yml
-!src/test/resources/application-test.yml
+!backend/src/main/resources/application-example.yml
+!backend/src/test/resources/application-test.yml
