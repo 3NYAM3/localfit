@@ -1,56 +1,99 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { signIn } from "../api/auth";
 
 /**
  * 로그인 화면
- * 성공 시 토큰을 저장하고 관심지역 페이지로 이동한다
+ * 성공 시 토큰을 저장하고 메인 페이지로 이동한다
  */
-
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
       await signIn(email, password);
-      navigate("/favorites");
+      navigate("/main");
     } catch (err) {
       setError(err.response?.data?.message ?? "로그인에 실패했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 360, margin: "80px auto", padding: 20 }}>
-      <h1>LOCAL FIT</h1>
-      <p>공공데이터 기반 수도권 지역 분석·추천</p>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        {/* 로고 영역 */}
+        <div className="mb-10 text-center">
+          <h1 className="text-[53px] font-bold tracking-tight">LOCAL FIT</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            공공데이터로 찾는 나에게 맞는 동네
+          </p>
+        </div>
 
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="이메일"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", padding: 10, marginBottom: 10 }}
-        />
+        {/* 로그인 카드 */}
+        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-neutral-200">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-neutral-700">
+                이메일
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="w-full rounded-lg border border-neutral-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              />
+            </div>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-neutral-700">
+                비밀번호
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-lg border border-neutral-300 px-3.5 py-2.5 text-sm outline-none transition focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
+              />
+            </div>
 
-        <button type="submit" style={{ width: "100%", padding: 10 }}>
-          로그인
-        </button>
-      </form>
+            {error && (
+              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-neutral-900 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-50"
+            >
+              {loading ? "로그인 중..." : "로그인"}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-neutral-500">
+          계정이 없으신가요?{" "}
+          <Link
+            to="/signup"
+            className="font-medium text-neutral-900 hover:underline"
+          >
+            회원가입
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
