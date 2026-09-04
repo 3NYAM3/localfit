@@ -11,18 +11,24 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "subway_station")
+@Table(
+        name = "subway_station",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_station_name_region",
+                columnNames = {"normalized_name", "region_id"}
+        )
+)
 public class SubwayStation extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 20)
-    private String stationCode;
+    @Column(nullable = false, length = 50)
+    private String stationName;         // 원본 역명
 
     @Column(nullable = false, length = 50)
-    private String stationName;
+    private String normalizedName;      // 정규화 역명
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "region_id", nullable = false)
@@ -32,10 +38,10 @@ public class SubwayStation extends BaseEntity {
     private Double longitude;
 
     @Builder
-    public SubwayStation(String stationCode, String stationName, Region region,
+    public SubwayStation(String stationName, String normalizedName, Region region,
                          Double latitude, Double longitude) {
-        this.stationCode = stationCode;
         this.stationName = stationName;
+        this.normalizedName = normalizedName;
         this.region = region;
         this.latitude = latitude;
         this.longitude = longitude;

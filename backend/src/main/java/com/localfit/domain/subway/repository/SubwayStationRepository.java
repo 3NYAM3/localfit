@@ -11,7 +11,7 @@ import java.util.List;
 public interface SubwayStationRepository extends JpaRepository<SubwayStation, Long> {
 
     /** 역번호 중복 여부 확인 */
-    boolean existsByStationCode(String stationCode);
+    boolean existsByNormalizedNameAndRegionId(String normalizedName, Long regionId);
 
     /**
      * 수도권 전체 시군구별 지하철역 개수 집계
