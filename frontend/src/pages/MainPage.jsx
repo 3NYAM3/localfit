@@ -41,7 +41,7 @@ function MainPage() {
           {[
             { label: "법정동", value: "2,907", unit: "개" },
             { label: "전월세 실거래", value: "223,781", unit: "건" },
-            { label: "지하철역", value: "703", unit: "개" },
+            { label: "지하철역", value: "646", unit: "개" },
             { label: "병원", value: "750", unit: "개" },
           ].map((item) => (
             <div

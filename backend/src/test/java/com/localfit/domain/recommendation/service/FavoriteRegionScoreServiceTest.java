@@ -413,11 +413,9 @@ public class FavoriteRegionScoreServiceTest {
     private ScoreWeightRequest createWeightRequest(ImportanceLevel housing, ImportanceLevel subway,
                                                    ImportanceLevel hospital) {
         ScoreWeightRequest request = new ScoreWeightRequest();
-        ReflectionTestUtils.setField(request, "importance", Map.of(
-                IndicatorType.HOUSING, housing,
-                IndicatorType.SUBWAY, subway,
-                IndicatorType.HOSPITAL, hospital
-        ));
+        request.setHousingImportance(housing);
+        request.setSubwayImportance(subway);
+        request.setHospitalImportance(hospital);
         return request;
     }
 
