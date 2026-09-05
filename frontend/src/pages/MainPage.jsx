@@ -8,6 +8,18 @@ import Header from "../components/Header";
 function MainPage() {
   const navigate = useNavigate();
 
+  const handleStart = () => {
+    const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
+
+    if (isLoggedIn) {
+      navigate("/regions");
+      return;
+    }
+
+    // 로그인 후 원래 하려던 곳으로 보내기 위해 목적지를 함께 전달
+    navigate("/login", { state: { from: "/regions" } });
+  };
+
   return (
     <div className="min-h-screen">
       <Header />
@@ -30,7 +42,7 @@ function MainPage() {
         </p>
 
         <button
-          onClick={() => navigate("/regions")}
+          onClick={handleStart}
           className="mt-10 rounded-full bg-stone-900 px-8 py-3.5 font-medium text-white transition hover:bg-stone-700"
         >
           지역 선택하기

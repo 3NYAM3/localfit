@@ -146,7 +146,7 @@ function ResultPage() {
             지역 다시 선택
           </button>
           <button
-            onClick={() => navigate("/main")}
+            onClick={() => navigate("/")}
             className="flex-1 rounded-lg bg-stone-900 py-3 text-sm font-medium text-white transition hover:bg-stone-700"
           >
             홈으로

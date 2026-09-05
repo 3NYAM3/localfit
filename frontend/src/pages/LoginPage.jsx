@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { signIn } from "../api/auth";
 
 /**
@@ -12,6 +12,10 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // 특정 페이지로 가려다 로그인한 경우 그곳으로, 아니면 메인으로
+  const redirectTo = location.state?.from ?? "/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +24,7 @@ function LoginPage() {
 
     try {
       await signIn(email, password);
-      navigate("/main");
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message ?? "로그인에 실패했습니다.");
     } finally {
@@ -33,9 +37,13 @@ function LoginPage() {
       <div className="w-full max-w-sm">
         {/* 로고 영역 */}
         <div className="mb-10 text-center">
-          <h1 className="text-[53px] font-bold tracking-tight">LOCAL FIT</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            공공데이터로 찾는 나에게 맞는 동네
+          <Link to="/" className="inline-block">
+            <h1 className="text-[3.5rem] font-bold tracking-tight transition hover:text-stone-700">
+              LOCAL FIT
+            </h1>
+          </Link>
+          <p className="mt-3 text-sm text-stone-500">
+            공공데이터로 찾는 내게 맞는 동네
           </p>
         </div>
 

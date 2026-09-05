@@ -24,7 +24,7 @@ function SignupPage() {
 
     try {
       await signup(form.email, form.password, form.nickname);
-      navigate("/");
+      navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message ?? "회원가입에 실패했습니다.");
     } finally {
@@ -36,7 +36,13 @@ function SignupPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-10 text-center">
-          <h1 className="text-[40px] font-bold tracking-tight">회원가입</h1>
+          <Link
+            to="/"
+            className="text-sm font-bold tracking-tight text-stone-400 transition hover:text-stone-600"
+          >
+            LOCAL FIT
+          </Link>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight">회원가입</h1>
           <p className="mt-3 text-sm text-stone-500">
             LOCAL FIT과 함께 동네를 찾아보세요
           </p>
@@ -104,10 +110,12 @@ function SignupPage() {
             </button>
           </form>
         </div>
-
         <p className="mt-6 text-center text-sm text-stone-500">
           이미 계정이 있으신가요?{" "}
-          <Link to="/" className="font-medium text-stone-900 hover:underline">
+          <Link
+            to="/login"
+            className="font-medium text-stone-900 hover:underline"
+          >
             로그인
           </Link>
         </p>

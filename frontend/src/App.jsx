@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import PrivateRoute from "./components/PrivateRoute";
+import MainPage from "./pages/MainPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
-import MainPage from "./pages/MainPage";
 import RegionSelectPage from "./pages/RegionSelectPage";
 import PreferencePage from "./pages/PreferencePage";
 import ResultPage from "./pages/ResultPage";
@@ -10,12 +11,36 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LoginPage />} />
+        {/* 공개 */}
+        <Route path="/" element={<MainPage />} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/main" element={<MainPage />} />
-        <Route path="/regions" element={<RegionSelectPage />} />
-        <Route path="/preferences" element={<PreferencePage />} />
-        <Route path="/results" element={<ResultPage />} />
+
+        {/* 인증 필요 */}
+        <Route
+          path="/regions"
+          element={
+            <PrivateRoute>
+              <RegionSelectPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/preferences"
+          element={
+            <PrivateRoute>
+              <PreferencePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/results"
+          element={
+            <PrivateRoute>
+              <ResultPage />
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
