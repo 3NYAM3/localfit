@@ -4,6 +4,7 @@ import Header from "../components/Header";
 import { searchRegions } from "../api/region";
 import { saveFavorites } from "../api/favorite";
 import StepIndicator from "../components/StepIndicator";
+import { ChevronUp, ChevronDown, X } from "lucide-react";
 
 const MAX_FAVORITES = 5;
 
@@ -174,20 +175,20 @@ function RegionSelectPage() {
                       disabled={index === 0}
                       label="위로"
                     >
-                      ↑
+                      <ChevronUp size={14} />
                     </IconButton>
                     <IconButton
                       onClick={() => moveRegion(index, 1)}
                       disabled={index === selected.length - 1}
                       label="아래로"
                     >
-                      ↓
+                      <ChevronDown size={14} />
                     </IconButton>
                     <IconButton
                       onClick={() => toggleRegion(region)}
                       label="삭제"
                     >
-                      ×
+                      <X size={14} />
                     </IconButton>
                   </div>
                 </li>

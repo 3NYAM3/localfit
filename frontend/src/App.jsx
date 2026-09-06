@@ -6,6 +6,7 @@ import SignupPage from "./pages/SignupPage";
 import RegionSelectPage from "./pages/RegionSelectPage";
 import PreferencePage from "./pages/PreferencePage";
 import ResultPage from "./pages/ResultPage";
+import MyPage from "./pages/MyPage";
 
 function App() {
   return (
@@ -38,6 +39,14 @@ function App() {
           element={
             <PrivateRoute>
               <ResultPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/mypage"
+          element={
+            <PrivateRoute>
+              <MyPage />
             </PrivateRoute>
           }
         />

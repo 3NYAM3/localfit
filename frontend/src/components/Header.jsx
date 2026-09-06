@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { signOut } from "../api/auth";
+import { User, Menu } from "lucide-react";
 
 /**
  * 공통 헤더
@@ -46,7 +47,7 @@ function Header() {
             }`}
             aria-label="메뉴"
           >
-            {isLoggedIn ? "나" : "···"}
+            {isLoggedIn ? <User size={16} /> : <Menu size={16} />}
           </button>
 
           {open && (
