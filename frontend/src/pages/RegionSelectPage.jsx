@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "../components/Header";
-import { searchRegions } from "../api/region";
-import { saveFavorites } from "../api/favorite";
-import StepIndicator from "../components/StepIndicator";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
+import Header from "../components/Header";
+import StepIndicator from "../components/StepIndicator";
+import { searchRegions } from "../api/region";
+import { getFavorites, saveFavorites } from "../api/favorite";
 
 const MAX_FAVORITES = 5;
 
@@ -17,8 +17,33 @@ function RegionSelectPage() {
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [loadingExisting, setLoadingExisting] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  // 이미 등록해둔 관심지역이 있으면 불러와 채워둔다
+  // (일부만 수정하려는 경우 처음부터 다시 고르지 않도록)
+  useEffect(() => {
+    const loadExisting = async () => {
+      try {
+        const response = await getFavorites();
+        setSelected(
+          response.data.data.map((favorite) => ({
+            id: favorite.regionId,
+            sido: favorite.sido,
+            sigungu: favorite.sigungu,
+            dong: favorite.dong,
+          })),
+        );
+      } catch {
+        // 조회 실패 시 빈 상태로 시작한다
+      } finally {
+        setLoadingExisting(false);
+      }
+    };
+
+    loadExisting();
+  }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -66,6 +91,17 @@ function RegionSelectPage() {
       setError(err.response?.data?.message ?? "저장에 실패했습니다.");
     }
   };
+
+  if (loadingExisting) {
+    return (
+      <div className="min-h-screen">
+        <Header />
+        <p className="py-24 text-center text-sm text-stone-400">
+          불러오는 중...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
