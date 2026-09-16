@@ -146,13 +146,73 @@ localfit
 
 ## 실행 방법
 
-### 1. 사전 준비
+두 가지 방법으로 실행할 수 있습니다.
 
-```bash
-docker-compose up -d    # MySQL, Redis 실행
+### 방법 A — Docker로 한 번에 실행 (권장)
+
+**1. 환경변수 설정**
+
+루트에 `.env` 파일을 만듭니다.
+
+```
+DB_PASSWORD=원하는_비밀번호
+JWT_SECRET=256비트_이상의_임의_문자열
+PUBLIC_DATA_SERVICE_KEY=공공데이터포털_발급_인증키
 ```
 
-### 2. 백엔드 설정
+**2. 지하철역 데이터 파일 배치**
+
+```
+backend/src/main/resources/data/subway_stations.xlsx
+```
+
+**3. 실행**
+
+```bash
+docker-compose up -d --build
+```
+
+MySQL, Redis, 백엔드, 프론트엔드가 한 번에 뜹니다.
+
+- `http://localhost` — 프론트엔드
+- `http://localhost:8080/swagger-ui.html` — API 문서
+
+**4. 데이터 수집**
+
+Docker의 MySQL은 빈 상태로 시작하므로, Swagger나 curl로 순서대로 호출합니다.
+
+```
+POST /internal/regions/sync     # 1) 법정동 (선행 필수)
+POST /internal/rent/sync        # 2) 전월세
+POST /internal/subway/sync      # 3) 지하철역
+POST /internal/hospital/sync    # 4) 병원
+```
+
+**컨테이너 종료/재시작**
+
+```bash
+docker-compose stop     # 데이터 유지한 채 정지
+docker-compose start    # 재시작
+docker-compose down     # 컨테이너 삭제 (볼륨은 유지, 데이터 안 날아감)
+```
+
+---
+
+### 방법 B — 로컬에서 직접 실행 (개발용)
+
+Docker 없이 각각 실행합니다. 코드를 수정하며 개발할 때는 이 방법이 더 빠릅니다 (핫 리로드 지원).
+
+**1. MySQL, Redis 준비**
+
+로컬에 설치하거나, DB/캐시만 Docker로 띄울 수 있습니다.
+
+```bash
+docker run -d --name localfit-mysql -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=비밀번호 -e MYSQL_DATABASE=localfit mysql:8.4
+docker run -d --name localfit-redis -p 6379:6379 redis:7-alpine
+```
+
+**2. 백엔드 설정**
 
 ```bash
 cd backend
@@ -171,22 +231,22 @@ cp src/main/resources/application-example.yml src/main/resources/application.yml
 backend/src/main/resources/data/subway_stations.xlsx
 ```
 
-### 3. 백엔드 실행 및 데이터 수집
+**3. 백엔드 실행 및 데이터 수집**
 
 ```bash
 ./gradlew bootRun
 ```
 
 ```
-POST /internal/regions/sync     # 1) 법정동 (선행 필수)
-POST /internal/rent/sync        # 2) 전월세
-POST /internal/subway/sync      # 3) 지하철역
-POST /internal/hospital/sync    # 4) 병원
+POST /internal/regions/sync
+POST /internal/rent/sync
+POST /internal/subway/sync
+POST /internal/hospital/sync
 ```
 
 API 문서: `http://localhost:8080/swagger-ui.html`
 
-### 4. 프론트엔드 실행
+**4. 프론트엔드 실행**
 
 ```bash
 cd frontend
