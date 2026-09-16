@@ -41,3 +41,6 @@ application.yml
 application-*.yml
 !backend/src/main/resources/application-example.yml
 !backend/src/test/resources/application-test.yml
+
+### Docker ###
+.env

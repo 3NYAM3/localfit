@@ -51,9 +51,9 @@ function MainPage() {
         {/* 데이터 출처 */}
         <div className="mt-24 grid w-full max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "법정동", value: "2,907", unit: "개" },
-            { label: "전월세 실거래", value: "223,781", unit: "건" },
-            { label: "지하철역", value: "646", unit: "개" },
+            { label: "법정동", value: "2,900+", unit: "개" },
+            { label: "전월세 실거래", value: "22만+", unit: "건" },
+            { label: "지하철역", value: "640+", unit: "개" },
             { label: "병원", value: "750", unit: "개" },
           ].map((item) => (
             <div
